@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: nutrivision-backend
+    runtime: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: python backend/main.py
+    envVars:
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.10.0

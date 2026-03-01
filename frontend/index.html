@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriVision AI — Food Nutrition Estimator</title>
+    <meta name="description"
+        content="Upload a food image and our AI-powered deep learning model will instantly estimate calories, protein, carbs, and fat.">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #080c14;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* === Animated Gradient Background === */
+        .bg-animated {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background: radial-gradient(ellipse at 20% 20%, rgba(16, 185, 129, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(59, 130, 246, 0.10) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.06) 0%, transparent 70%),
+                #080c14;
+            animation: bgShift 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgShift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            100% {
+                background-position: 100% 50%;
+            }
+        }
+
+        /* Floating orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            pointer-events: none;
+            animation: float 12s ease-in-out infinite alternate;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: #10b981;
+            top: -100px;
+            left: -100px;
+            animation-duration: 14s;
+        }
+
+        .orb-2 {
+            width: 350px;
+            height: 350px;
+            background: #3b82f6;
+            bottom: -80px;
+            right: -80px;
+            animation-duration: 10s;
+        }
+
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: #8b5cf6;
+            top: 40%;
+            left: 40%;
+            animation-duration: 16s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(30px, 20px) scale(1.08);
+            }
+        }
+
+        /* === Glass Panel === */
+        .glass {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+        }
+
+        /* === Upload Zone === */
+        .drop-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.drag-active {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.06);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.12);
+        }
+
+        /* === Glow Button === */
+        .btn-glow {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.4), 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .btn-glow:hover {
+            box-shadow: 0 0 50px rgba(16, 185, 129, 0.6), 0 4px 20px rgba(0, 0, 0, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-glow:disabled {
+            background: linear-gradient(135deg, #374151, #1f2937);
+            box-shadow: none;
+            transform: none;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        /* === Progress Bar === */
+        .macro-bar-fill {
+            height: 6px;
+            border-radius: 9999px;
+            transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            width: 0%;
+        }
+
+        /* === Animated Counter === */
+        .calorie-count {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* === Spinner === */
+        .spinner-ring {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #10b981;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* === Pulse dot === */
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.1);
+                box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+            }
+        }
+
+        /* === Fade in animation === */
+        .fade-up {
+            animation: fadeUp 0.5s ease forwards;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* === Badge === */
+        .badge {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+
+        .badge-purple {
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #a78bfa;
+        }
+
+        .badge-blue {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+        }
+
+        /* === Input Fields === */
+        .dark-input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #f1f5f9;
+            transition: all 0.2s;
+        }
+
+        .dark-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .dark-input:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        select.dark-input option {
+            background: #1e293b;
+            color: #f1f5f9;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 99px;
+        }
+    </style>
+</head>
+
+<body class="text-slate-100">
+    <!-- Background -->
+    <div class="bg-animated"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="relative z-10 min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+
+        <!-- Header -->
+        <div class="text-center mb-10 w-full max-w-4xl">
+            <div
+                class="inline-flex items-center gap-2 badge text-xs font-semibold px-4 py-1.5 rounded-full mb-5 uppercase tracking-widest">
+                <span class="pulse-dot"></span>
+                Deep Learning Model Active
+            </div>
+            <h1 class="text-4xl md:text-6xl font-black tracking-tight mb-4 leading-tight">
+                <span class="calorie-count">NutriVision</span><span class="text-white"> AI</span>
+            </h1>
+            <p class="text-slate-400 text-lg max-w-xl mx-auto leading-relaxed">
+                Upload a photo of your food. Our GPU-accelerated deep learning model instantly estimates your calories
+                &amp; macros.
+            </p>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- === LEFT: Upload Panel === -->
+            <div class="glass rounded-3xl p-8 flex flex-col gap-5">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                        <i class="fa-solid fa-cloud-arrow-up text-emerald-400 text-sm"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-lg text-white">Secure Upload</h2>
+                        <p class="text-slate-500 text-xs">JWT Protected · Rate Limited</p>
+                    </div>
+                </div>
+
+                <!-- Drop Zone -->
+                <div id="drop-zone"
+                    class="drop-zone rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer h-56 relative overflow-hidden group">
+                    <div
+                        class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.04),transparent)]">
+                    </div>
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-4 group-hover:border-emerald-500/40 transition-colors">
+                        <i
+                            class="fa-regular fa-image text-2xl text-slate-400 group-hover:text-emerald-400 transition-colors"></i>
+                    </div>
+                    <p class="text-slate-300 font-semibold mb-1">Drop your food image here</p>
+                    <p class="text-slate-500 text-sm mb-4">JPG, PNG · Max 5MB</p>
+                    <button id="browse-btn"
+                        class="bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 px-5 py-2 rounded-full text-sm font-medium transition-all hover:border-emerald-500/40 hover:text-emerald-300">
+                        Browse Files
+                    </button>
+                    <input type="file" id="file-input" class="hidden" accept="image/jpeg, image/png, image/jpg">
+                </div>
+
+                <!-- Image Preview -->
+                <div id="preview-container" class="hidden relative rounded-2xl overflow-hidden border border-slate-700"
+                    style="height:180px">
+                    <img id="image-preview" src="" alt="Food Preview" class="w-full h-full object-cover">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-4">
+                        <p id="filename-display" class="text-white text-sm font-medium truncate flex-1"></p>
+                    </div>
+                    <button id="reset-btn"
+                        class="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white rounded-full w-8 h-8 flex items-center justify-center backdrop-blur-sm transition-all hover:scale-110">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- Manual Inputs -->
+                <div id="manual-inputs" class="hidden flex flex-col gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Food
+                            Name <span class="text-slate-600 normal-case">(Optional — improves accuracy)</span></label>
+                        <input type="text" id="food-name" placeholder="e.g. Grilled Chicken Salad"
+                            class="dark-input w-full rounded-xl px-4 py-2.5 text-sm">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Serving
+                            Size <span class="text-slate-600 normal-case">(Optional)</span></label>
+                        <div class="flex gap-2">
+                            <input type="number" id="serving-size" placeholder="e.g. 200"
+                                class="dark-input w-full rounded-xl px-4 py-2.5 text-sm">
+                            <select id="serving-unit" class="dark-input rounded-xl px-3 py-2.5 text-sm cursor-pointer">
+                                <option value="g">Grams</option>
+                                <option value="oz">Ounces</option>
+                                <option value="lbs">Pounds</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analyze Button -->
+                <button id="analyze-btn" class="btn-glow w-full py-3.5 rounded-xl font-bold text-white text-base hidden"
+                    disabled>
+                    <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Analyze Nutrition
+                </button>
+
+                <!-- Security note -->
+                <div class="flex items-center gap-2 text-xs text-slate-600">
+                    <i class="fa-solid fa-shield-halved text-emerald-800"></i>
+                    <span>Images are processed securely and never stored on our servers.</span>
+                </div>
+            </div>
+
+            <!-- === RIGHT: Results / Loading / Empty === -->
+
+            <!-- Loading State -->
+            <div id="loading-state"
+                class="hidden glass rounded-3xl p-8 flex flex-col items-center justify-center gap-4 min-h-[460px]">
+                <div class="spinner-ring"></div>
+                <div class="text-center">
+                    <h3 class="text-lg font-bold text-white mb-1">Analyzing your meal...</h3>
+                    <p class="text-slate-400 text-sm max-w-xs">Our GPU-accelerated model is estimating your macros over
+                        the cloud.</p>
+                </div>
+                <div class="flex gap-1.5 mt-2">
+                    <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" style="animation-delay:0s">
+                    </div>
+                    <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" style="animation-delay:0.15s">
+                    </div>
+                    <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" style="animation-delay:0.3s">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State (default right panel) -->
+            <div id="empty-state"
+                class="glass rounded-3xl p-8 flex flex-col items-center justify-center gap-4 min-h-[460px] text-center">
+                <div
+                    class="w-20 h-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-2">
+                    <i class="fa-solid fa-bowl-food text-3xl text-slate-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-400">Waiting for your food...</h3>
+                <p class="text-slate-600 text-sm max-w-xs">Upload an image on the left and hit <strong
+                        class="text-slate-400">Analyze Nutrition</strong> to get your results here.</p>
+                <!-- Decorative stat previews -->
+                <div class="grid grid-cols-3 gap-3 mt-4 w-full opacity-30">
+                    <div class="bg-slate-800/80 rounded-xl p-3 text-center">
+                        <div class="text-slate-500 text-xs uppercase tracking-wide mb-1">Protein</div>
+                        <div class="text-lg font-bold text-slate-400">--g</div>
+                    </div>
+                    <div class="bg-slate-800/80 rounded-xl p-3 text-center">
+                        <div class="text-slate-500 text-xs uppercase tracking-wide mb-1">Carbs</div>
+                        <div class="text-lg font-bold text-slate-400">--g</div>
+                    </div>
+                    <div class="bg-slate-800/80 rounded-xl p-3 text-center">
+                        <div class="text-slate-500 text-xs uppercase tracking-wide mb-1">Fat</div>
+                        <div class="text-lg font-bold text-slate-400">--g</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="results-container" class="hidden glass rounded-3xl p-8 flex flex-col gap-6 fade-up min-h-[460px]">
+                <!-- Header row -->
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                            <i class="fa-solid fa-chart-pie text-emerald-400 text-sm"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-lg text-white">Nutrition Facts</h2>
+                            <p class="text-slate-500 text-xs">AI Estimated — Deep Learning</p>
+                        </div>
+                    </div>
+                    <span id="datasource-badge"
+                        class="hidden text-xs font-semibold px-3 py-1.5 rounded-full badge uppercase tracking-wider"></span>
+                </div>
+
+                <!-- Calorie Hero -->
+                <div
+                    class="bg-gradient-to-br from-emerald-500/10 to-teal-600/10 border border-emerald-500/15 rounded-2xl p-6 text-center">
+                    <p class="text-slate-400 text-xs uppercase tracking-widest mb-2">Total Calories</p>
+                    <div class="flex items-end justify-center gap-2">
+                        <span id="cal-result" class="text-6xl font-black calorie-count">0</span>
+                        <span class="text-slate-400 text-xl pb-2 font-medium">kcal</span>
+                    </div>
+                    <p class="text-slate-500 text-xs mt-2">Est. Total Mass: <span id="mass-result"
+                            class="text-slate-300 font-semibold">--</span>g</p>
+                </div>
+
+                <!-- Macro Progress Bars -->
+                <div class="flex flex-col gap-4">
+                    <!-- Protein -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2.5 h-2.5 rounded-full bg-red-400"></div>
+                                <span class="text-sm font-semibold text-slate-300">Protein</span>
+                            </div>
+                            <span class="text-sm font-bold text-white"><span id="prot-result">0</span>g</span>
+                        </div>
+                        <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="prot-bar" class="macro-bar-fill bg-gradient-to-r from-red-400 to-rose-500"></div>
+                        </div>
+                    </div>
+                    <!-- Carbs -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2.5 h-2.5 rounded-full bg-blue-400"></div>
+                                <span class="text-sm font-semibold text-slate-300">Carbohydrates</span>
+                            </div>
+                            <span class="text-sm font-bold text-white"><span id="carb-result">0</span>g</span>
+                        </div>
+                        <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="carb-bar" class="macro-bar-fill bg-gradient-to-r from-blue-400 to-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Fat -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
+                                <span class="text-sm font-semibold text-slate-300">Fat</span>
+                            </div>
+                            <span class="text-sm font-bold text-white"><span id="fat-result">0</span>g</span>
+                        </div>
+                        <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="fat-bar" class="macro-bar-fill bg-gradient-to-r from-amber-400 to-orange-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Donut Chart -->
+                <div class="flex items-center gap-6">
+                    <div class="relative w-28 h-28 flex-shrink-0">
+                        <canvas id="macroChart" width="112" height="112"></canvas>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <i class="fa-solid fa-fire-flame-curved text-amber-400 text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2 text-sm">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2.5 h-2.5 rounded-full bg-red-400 flex-shrink-0"></div><span
+                                class="text-slate-400">Protein — <span id="prot-pct"
+                                    class="text-white font-bold">0</span>%</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-2.5 h-2.5 rounded-full bg-blue-400 flex-shrink-0"></div><span
+                                class="text-slate-400">Carbs — <span id="carb-pct"
+                                    class="text-white font-bold">0</span>%</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0"></div><span
+                                class="text-slate-400">Fat — <span id="fat-pct"
+                                    class="text-white font-bold">0</span>%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer Badges -->
+        <div class="mt-10 flex gap-6 text-slate-600 text-xs font-medium flex-wrap justify-center">
+            <span class="flex items-center gap-1.5"><i class="fa-brands fa-python text-emerald-800"></i> FastAPI
+                Backend</span>
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-cloud text-blue-900"></i> Cloud Hosted</span>
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-purple-900"></i> JWT
+                Secured</span>
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-microchip text-slate-700"></i> EfficientNetB0
+                Model</span>
+        </div>
+
+    </div>
+
+    <script>
+        // =====================================================
+        // CONFIG: Change this to your Render URL after deploy
+        // e.g. "https://nutrivision-backend.onrender.com"
+        // =====================================================
+        const API_BASE = "http://127.0.0.1:8000";
+        const dropZone = document.getElementById('drop-zone');
+        const browseBtn = document.getElementById('browse-btn');
+        const fileInput = document.getElementById('file-input');
+        const previewContainer = document.getElementById('preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const filenameDisplay = document.getElementById('filename-display');
+        const resetBtn = document.getElementById('reset-btn');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const loadingState = document.getElementById('loading-state');
+        const resultsContainer = document.getElementById('results-container');
+        const emptyState = document.getElementById('empty-state');
+        const manualInputs = document.getElementById('manual-inputs');
+        const foodNameInput = document.getElementById('food-name');
+        const servingSizeInput = document.getElementById('serving-size');
+        const servingUnitInput = document.getElementById('serving-unit');
+
+        let selectedFile = null;
+        let chartInstance = null;
+
+        // === Drag & Drop ===
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
+            dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); })
+        );
+        ['dragenter', 'dragover'].forEach(ev =>
+            dropZone.addEventListener(ev, () => dropZone.classList.add('drag-active'))
+        );
+        ['dragleave', 'drop'].forEach(ev =>
+            dropZone.addEventListener(ev, () => dropZone.classList.remove('drag-active'))
+        );
+        dropZone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+        dropZone.addEventListener('click', () => fileInput.click());
+        browseBtn.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+        fileInput.addEventListener('change', function () { handleFiles(this.files); });
+
+        function handleFiles(files) {
+            if (!files.length) return;
+            const file = files[0];
+
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload a valid image file (JPG/PNG).');
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size exceeds 5MB limit.');
+                return;
+            }
+
+            selectedFile = file;
+            filenameDisplay.textContent = file.name;
+
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onloadend = () => {
+                imagePreview.src = reader.result;
+                dropZone.classList.add('hidden');
+                previewContainer.classList.remove('hidden');
+                manualInputs.classList.remove('hidden');
+                analyzeBtn.classList.remove('hidden');
+                analyzeBtn.removeAttribute('disabled');
+            };
+        }
+
+        resetBtn.addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            previewContainer.classList.add('hidden');
+            manualInputs.classList.add('hidden');
+            dropZone.classList.remove('hidden');
+            analyzeBtn.classList.add('hidden');
+            analyzeBtn.setAttribute('disabled', true);
+            showEmpty();
+        });
+
+        // === Analyze ===
+        analyzeBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            showLoading();
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            if (foodNameInput.value.trim()) formData.append('food_name', foodNameInput.value.trim());
+            if (servingSizeInput.value.trim()) {
+                formData.append('serving_size', servingSizeInput.value.trim());
+                formData.append('serving_unit', servingUnitInput.value);
+            }
+
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`${API_BASE}/predict`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.status === 429) throw new Error('Rate limit exceeded! Please wait before submitting again.');
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || 'Server error occurred');
+                }
+
+                const data = await response.json();
+                const elapsed = Date.now() - startTime;
+                if (elapsed < 1500) await new Promise(r => setTimeout(r, 1500 - elapsed));
+
+                showResults(data);
+            } catch (err) {
+                alert('API Error: ' + err.message);
+                showEmpty();
+            }
+        });
+
+        function showLoading() {
+            emptyState.classList.add('hidden');
+            resultsContainer.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+        }
+
+        function showEmpty() {
+            loadingState.classList.add('hidden');
+            resultsContainer.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+        }
+
+        function showResults(data) {
+            loadingState.classList.add('hidden');
+            emptyState.classList.add('hidden');
+
+            const macros = data.nutrition_estimates;
+            const dataSource = data.data_source_used;
+
+            // Animated counter
+            animateCounter('cal-result', 0, macros.calories, 900);
+
+            // Set values
+            document.getElementById('prot-result').textContent = macros.protein_grams;
+            document.getElementById('carb-result').textContent = macros.carbs_grams;
+            document.getElementById('fat-result').textContent = macros.fat_grams;
+            document.getElementById('mass-result').textContent = macros.mass_grams;
+
+            // Progress bars
+            const total = macros.protein_grams + macros.carbs_grams + macros.fat_grams || 1;
+            const protPct = Math.round((macros.protein_grams / total) * 100);
+            const carbPct = Math.round((macros.carbs_grams / total) * 100);
+            const fatPct = Math.round((macros.fat_grams / total) * 100);
+
+            document.getElementById('prot-pct').textContent = protPct;
+            document.getElementById('carb-pct').textContent = carbPct;
+            document.getElementById('fat-pct').textContent = fatPct;
+
+            setTimeout(() => {
+                document.getElementById('prot-bar').style.width = protPct + '%';
+                document.getElementById('carb-bar').style.width = carbPct + '%';
+                document.getElementById('fat-bar').style.width = fatPct + '%';
+            }, 100);
+
+            // Badge
+            const badge = document.getElementById('datasource-badge');
+            if (dataSource) {
+                badge.textContent = dataSource;
+                badge.className = dataSource.includes('NLP')
+                    ? 'text-xs font-semibold px-3 py-1.5 rounded-full badge-purple uppercase tracking-wider'
+                    : 'text-xs font-semibold px-3 py-1.5 rounded-full badge-blue uppercase tracking-wider';
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            // Donut chart
+            renderChart(macros.protein_grams, macros.carbs_grams, macros.fat_grams);
+
+            resultsContainer.classList.remove('hidden');
+        }
+
+        function animateCounter(id, from, to, duration) {
+            const el = document.getElementById(id);
+            const start = performance.now();
+            const update = (time) => {
+                const progress = Math.min((time - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                el.textContent = Math.round(from + (to - from) * eased);
+                if (progress < 1) requestAnimationFrame(update);
+                else el.textContent = to;
+            };
+            requestAnimationFrame(update);
+        }
+
+        function renderChart(protein, carbs, fat) {
+            const ctx = document.getElementById('macroChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Protein', 'Carbs', 'Fat'],
+                    datasets: [{
+                        data: [protein, carbs, fat],
+                        backgroundColor: [
+                            'rgba(248, 113, 113, 0.85)',
+                            'rgba(96, 165, 250, 0.85)',
+                            'rgba(251, 191, 36, 0.85)'
+                        ],
+                        borderWidth: 2,
+                        borderColor: 'rgba(8, 12, 20, 0.8)',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }, tooltip: {
+                            backgroundColor: 'rgba(15,23,42,0.95)',
+                            titleColor: '#f1f5f9',
+                            bodyColor: '#94a3b8',
+                            borderColor: 'rgba(255,255,255,0.08)',
+                            borderWidth: 1,
+                        }
+                    },
+                    cutout: '72%'
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
