@@ -44,7 +44,16 @@ app.add_middleware(
 )
 
 
-# --- [Deep Learning Model Loading] ---
+# --- [Image Classification Model Loading] ---
+print("Loading MobileNetV2 Classifier for Food Recognition...")
+try:
+    classifier_model = tf.keras.applications.MobileNetV2(weights='imagenet')
+    print("MobileNetV2 Classifier loaded successfully!")
+except Exception as e:
+    print(f"Warning: Could not load MobileNetV2: {e}")
+    classifier_model = None
+
+# --- [Deep Learning Regression Model Loading] ---
 print("Loading Trained Deep Learning Model...")
 # Path is relative to this script — works on Windows locally AND on Render (Linux)
 WEIGHTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "best_macro_model.weights.h5")
@@ -312,7 +321,37 @@ async def predict_nutrition(
     if len(image_bytes) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large. Max 5MB allowed.")
 
-    # 3. Deep Learning: Run Inference
+    # 3. Multimodal Food Recognition (Classification)
+    detected_name = food_name
+    detected_confidence = 0.0
+    
+    if not detected_name and classifier_model is not None:
+        try:
+            print("[Classifier] Running ImageNet Food Recognition...")
+            img_clf = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+            img_clf = img_clf.resize((224, 224))
+            img_array_clf = tf.keras.utils.img_to_array(img_clf)
+            img_array_clf = tf.keras.applications.mobilenet_v2.preprocess_input(img_array_clf)
+            img_array_clf = tf.expand_dims(img_array_clf, 0)
+            
+            # Predict top 3 classes
+            preds = classifier_model.predict(img_array_clf)
+            decoded = tf.keras.applications.mobilenet_v2.decode_predictions(preds, top=3)[0]
+            
+            # Use the highest confidence guess
+            best_guess = decoded[0][1].replace("_", " ")
+            detected_confidence = float(decoded[0][2])
+            
+            # Only trust it if confidence > 10%
+            if detected_confidence > 0.10:
+                detected_name = best_guess
+                print(f"[Classifier] AI Recognition Guessed: '{detected_name}' ({detected_confidence*100:.1f}%)")
+            else:
+                print(f"[Classifier] AI Recognition was too uncertain. Top guess was: '{best_guess}' ({detected_confidence*100:.1f}%)")
+        except Exception as e:
+            print(f"[Classifier] Error running classification: {e}")
+
+    # 4. Deep Learning: Run Regression Inference (Nutrition5k Model)
     try:
         prediction = predict_image(image_bytes)
         
@@ -346,17 +385,15 @@ async def predict_nutrition(
         print(f"AI Raw: {prediction}")
         print(f"AI Scaled: {ai_macros}")
 
-        # 4. Multimodal NLP Override
-        # If the user typed a food name, we query Edamam to ground the AI prediction
+        # 5. Multimodal NLP Override
+        # If the user typed a food name (or the AI Classifier guessed one), query Edamam/Local DB
         final_macros = ai_macros
         data_source = "Deep Learning Vision"
         
-        if food_name and food_name.strip() != "":
-            nlp_macros = fetch_edamam_nutrition(food_query=food_name.strip(), serving_size_g=calculated_mass_g)
+        if detected_name and detected_name.strip() != "":
+            nlp_macros = fetch_edamam_nutrition(food_query=detected_name.strip(), serving_size_g=calculated_mass_g)
             if nlp_macros:
-                # Use Edamam exclusively when food_name is provided — it gives verified
-                # nutritional data. Blending with AI (especially when model is None/random)
-                # would corrupt accurate results.
+                # Use Verified Database exclusively when food name is known (either typed or AI-detected)
                 final_macros = {
                     "calories": nlp_macros["calories"],
                     "mass_grams": calculated_mass_g,
@@ -364,12 +401,17 @@ async def predict_nutrition(
                     "carbs_grams": nlp_macros["carbs_grams"],
                     "protein_grams": nlp_macros["protein_grams"],
                 }
-                data_source = "Edamam NLP (Verified)"
+                
+                # Update data source description
+                if food_name:
+                    data_source = "NLP Database (Verified)"
+                else:
+                    data_source = f"AI Classifier + DB ({detected_confidence*100:.0f}% Conf)"
 
         return {
             "status": "success",
             "filename": file.filename,
-            "detected_food_name": food_name if food_name else "Unknown (AI Vision Model)",
+            "detected_food_name": detected_name if detected_name else "Unknown (AI Vision Model)",
             "data_source_used": data_source,
             "nutrition_estimates": {
                 "calories": round(final_macros["calories"], 1),
