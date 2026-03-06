@@ -58,8 +58,16 @@ if os.path.exists(WEIGHTS_PATH):
         _base = tf.keras.applications.EfficientNetB0(
             input_shape=(IMG_SIZE, IMG_SIZE, 3),
             include_top=False,
-            weights=None  # We'll load our trained weights below
+            weights='imagenet'  # Must match train.py initialization
         )
+
+        # Match the exact freezing logic from train.py so the geometry of 
+        # trainable vs non-trainable weights aligns perfectly
+        for layer in _base.layers[:-30]:
+            layer.trainable = False
+        for layer in _base.layers[-30:]:
+            layer.trainable = True
+
         macro_model = tf.keras.Sequential([
             _base,
             tf.keras.layers.GlobalAveragePooling2D(),
@@ -68,8 +76,8 @@ if os.path.exists(WEIGHTS_PATH):
         ])
         # Build by running a dummy input so weights can load
         macro_model(tf.zeros([1, IMG_SIZE, IMG_SIZE, 3]))
-        macro_model.load_weights(WEIGHTS_PATH, by_name=True, skip_mismatch=True)
-        print("Model loaded successfully from weights (with skip_mismatch=True)!")
+        macro_model.load_weights(WEIGHTS_PATH, by_name=True)
+        print("Model loaded successfully from weights!")
     except Exception as e:
         print(f"Warning: Could not load model weights: {e}. Using mock predictions.")
         macro_model = None
