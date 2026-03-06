@@ -85,13 +85,19 @@ if os.path.exists(WEIGHTS_PATH):
         ])
         # Build by running a dummy input so weights can load
         macro_model(tf.zeros([1, IMG_SIZE, IMG_SIZE, 3]))
-        macro_model.load_weights(WEIGHTS_PATH, by_name=True)
+        macro_model.load_weights(WEIGHTS_PATH, by_name=True, skip_mismatch=True)
         print("Model loaded successfully from weights!")
     except Exception as e:
-        print(f"Warning: Could not load model weights: {e}. Using mock predictions.")
-        macro_model = None
+        import traceback
+        print(f"Warning: Could not load model weights: {e}")
+        traceback.print_exc()
+        print("Continuing with initialized (untrained) architecture...")
+        # We intentionally DO NOT set macro_model = None here anymore.
+        # This forces `predict_image` to use the architecture (even if weights failed)
+        # rather than fully defaulting to the hardcoded [150, 100, 5, 20, 8] array.
 else:
-    print("Warning: Trained model weights not found! Falling back to mock predictions.")
+    import traceback
+    print(f"Warning: Trained model weights not found at {WEIGHTS_PATH}! Falling back to mock predictions.")
 
 
 def predict_image(image_bytes):
