@@ -148,6 +148,27 @@
             width: 0%;
         }
 
+        /* === Macro Cards === */
+        .macro-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .macro-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .tip-box {
+            background: rgba(16, 185, 129, 0.07);
+            border: 1px solid rgba(16, 185, 129, 0.18);
+            border-radius: 14px;
+            animation: fadeUp 0.6s ease 0.4s both;
+        }
+
         /* === Animated Counter === */
         .calorie-count {
             background: linear-gradient(135deg, #10b981, #34d399);
@@ -270,10 +291,92 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: 99px;
         }
+
+        /* === Toast Notifications === */
+        #toast-container {
+            position: fixed;
+            top: 1.25rem;
+            right: 1.25rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            pointer-events: none;
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.85rem 1.25rem;
+            border-radius: 14px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            font-size: 0.875rem;
+            font-weight: 500;
+            min-width: 280px;
+            max-width: 380px;
+            pointer-events: all;
+            animation: toastIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .toast.removing {
+            animation: toastOut 0.3s ease forwards;
+        }
+
+        .toast-error {
+            background: rgba(30, 8, 8, 0.9);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .toast-success {
+            background: rgba(5, 28, 18, 0.9);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+        }
+
+        .toast-warning {
+            background: rgba(28, 20, 4, 0.9);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            color: #fde68a;
+        }
+
+        .toast-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(60px) scale(0.92);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        @keyframes toastOut {
+            from {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateX(60px) scale(0.92);
+            }
+        }
     </style>
 </head>
 
 <body class="text-slate-100">
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
     <!-- Background -->
     <div class="bg-animated"></div>
     <div class="orb orb-1"></div>
@@ -408,33 +511,44 @@
 
             <!-- Empty State (default right panel) -->
             <div id="empty-state"
-                class="glass rounded-3xl p-8 flex flex-col items-center justify-center gap-4 min-h-[460px] text-center">
+                class="glass rounded-3xl p-8 flex flex-col items-center justify-center gap-5 min-h-[460px] text-center">
                 <div
-                    class="w-20 h-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-2">
-                    <i class="fa-solid fa-bowl-food text-3xl text-slate-600"></i>
+                    class="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border border-white/10 flex items-center justify-center mb-1">
+                    <i class="fa-solid fa-bowl-food text-3xl text-emerald-500/60"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-slate-400">Waiting for your food...</h3>
-                <p class="text-slate-600 text-sm max-w-xs">Upload an image on the left and hit <strong
-                        class="text-slate-400">Analyze Nutrition</strong> to get your results here.</p>
-                <!-- Decorative stat previews -->
-                <div class="grid grid-cols-3 gap-3 mt-4 w-full opacity-30">
-                    <div class="bg-slate-800/80 rounded-xl p-3 text-center">
-                        <div class="text-slate-500 text-xs uppercase tracking-wide mb-1">Protein</div>
-                        <div class="text-lg font-bold text-slate-400">--g</div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-300">Ready to analyze your meal</h3>
+                    <p class="text-slate-500 text-sm mt-1 max-w-xs mx-auto">Upload a food photo on the left and our AI
+                        will instantly estimate the nutrition facts.</p>
+                </div>
+                <!-- How it works steps -->
+                <div class="w-full flex flex-col gap-3 mt-2 text-left">
+                    <div class="flex items-center gap-3 bg-slate-800/60 rounded-xl px-4 py-3">
+                        <div
+                            class="w-7 h-7 rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                            1</div>
+                        <p class="text-slate-400 text-sm"><span class="text-white font-semibold">Upload</span> a photo
+                            of your food</p>
                     </div>
-                    <div class="bg-slate-800/80 rounded-xl p-3 text-center">
-                        <div class="text-slate-500 text-xs uppercase tracking-wide mb-1">Carbs</div>
-                        <div class="text-lg font-bold text-slate-400">--g</div>
+                    <div class="flex items-center gap-3 bg-slate-800/60 rounded-xl px-4 py-3">
+                        <div
+                            class="w-7 h-7 rounded-full bg-blue-500/15 text-blue-400 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                            2</div>
+                        <p class="text-slate-400 text-sm"><span class="text-white font-semibold">Optionally type</span>
+                            the food name for better accuracy</p>
                     </div>
-                    <div class="bg-slate-800/80 rounded-xl p-3 text-center">
-                        <div class="text-slate-500 text-xs uppercase tracking-wide mb-1">Fat</div>
-                        <div class="text-lg font-bold text-slate-400">--g</div>
+                    <div class="flex items-center gap-3 bg-slate-800/60 rounded-xl px-4 py-3">
+                        <div
+                            class="w-7 h-7 rounded-full bg-purple-500/15 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                            3</div>
+                        <p class="text-slate-400 text-sm"><span class="text-white font-semibold">Get instant
+                                results</span> powered by EfficientNet AI</p>
                     </div>
                 </div>
             </div>
 
             <!-- Results -->
-            <div id="results-container" class="hidden glass rounded-3xl p-8 flex flex-col gap-6 fade-up min-h-[460px]">
+            <div id="results-container" class="hidden glass rounded-3xl p-6 flex flex-col gap-5 fade-up min-h-[460px]">
                 <!-- Header row -->
                 <div class="flex items-start justify-between">
                     <div class="flex items-center gap-3">
@@ -451,86 +565,84 @@
                         class="hidden text-xs font-semibold px-3 py-1.5 rounded-full badge uppercase tracking-wider"></span>
                 </div>
 
+                <!-- Detected Food Banner -->
+                <div id="detected-food-banner"
+                    class="hidden items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-2.5">
+                    <i class="fa-solid fa-brain text-purple-400 text-sm flex-shrink-0"></i>
+                    <p class="text-sm text-slate-300">AI Detected: <span id="detected-food-name"
+                            class="font-bold text-purple-300"></span></p>
+                </div>
+
                 <!-- Calorie Hero -->
                 <div
-                    class="bg-gradient-to-br from-emerald-500/10 to-teal-600/10 border border-emerald-500/15 rounded-2xl p-6 text-center">
-                    <p class="text-slate-400 text-xs uppercase tracking-widest mb-2">Total Calories</p>
+                    class="bg-gradient-to-br from-emerald-500/10 to-teal-600/10 border border-emerald-500/15 rounded-2xl p-5 text-center">
+                    <p class="text-slate-400 text-xs uppercase tracking-widest mb-1">Total Calories</p>
                     <div class="flex items-end justify-center gap-2">
                         <span id="cal-result" class="text-6xl font-black calorie-count">0</span>
                         <span class="text-slate-400 text-xl pb-2 font-medium">kcal</span>
                     </div>
-                    <p class="text-slate-500 text-xs mt-2">Est. Total Mass: <span id="mass-result"
+                    <p class="text-slate-500 text-xs mt-1.5">Est. Total Mass: <span id="mass-result"
                             class="text-slate-300 font-semibold">--</span>g</p>
                 </div>
 
-                <!-- Macro Progress Bars -->
-                <div class="flex flex-col gap-4">
-                    <!-- Protein -->
-                    <div>
-                        <div class="flex justify-between items-center mb-1.5">
-                            <div class="flex items-center gap-2">
-                                <div class="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-                                <span class="text-sm font-semibold text-slate-300">Protein</span>
-                            </div>
-                            <span class="text-sm font-bold text-white"><span id="prot-result">0</span>g</span>
+                <!-- Macro Cards -->
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="macro-card p-4 text-center">
+                        <div
+                            class="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-2">
+                            <i class="fa-solid fa-drumstick-bite text-red-400 text-xs"></i>
                         </div>
-                        <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Protein</div>
+                        <div class="text-xl font-black text-white"><span id="prot-result">0</span><span
+                                class="text-xs text-slate-500 font-medium">g</span></div>
+                        <div class="text-xs text-red-400 mt-1"><span id="prot-pct">0</span>%</div>
+                        <div class="h-1 bg-slate-800 rounded-full mt-2 overflow-hidden">
                             <div id="prot-bar" class="macro-bar-fill bg-gradient-to-r from-red-400 to-rose-500"></div>
                         </div>
                     </div>
-                    <!-- Carbs -->
-                    <div>
-                        <div class="flex justify-between items-center mb-1.5">
-                            <div class="flex items-center gap-2">
-                                <div class="w-2.5 h-2.5 rounded-full bg-blue-400"></div>
-                                <span class="text-sm font-semibold text-slate-300">Carbohydrates</span>
-                            </div>
-                            <span class="text-sm font-bold text-white"><span id="carb-result">0</span>g</span>
+                    <div class="macro-card p-4 text-center">
+                        <div
+                            class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto mb-2">
+                            <i class="fa-solid fa-wheat-awn text-blue-400 text-xs"></i>
                         </div>
-                        <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Carbs</div>
+                        <div class="text-xl font-black text-white"><span id="carb-result">0</span><span
+                                class="text-xs text-slate-500 font-medium">g</span></div>
+                        <div class="text-xs text-blue-400 mt-1"><span id="carb-pct">0</span>%</div>
+                        <div class="h-1 bg-slate-800 rounded-full mt-2 overflow-hidden">
                             <div id="carb-bar" class="macro-bar-fill bg-gradient-to-r from-blue-400 to-indigo-500">
                             </div>
                         </div>
                     </div>
-                    <!-- Fat -->
-                    <div>
-                        <div class="flex justify-between items-center mb-1.5">
-                            <div class="flex items-center gap-2">
-                                <div class="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
-                                <span class="text-sm font-semibold text-slate-300">Fat</span>
-                            </div>
-                            <span class="text-sm font-bold text-white"><span id="fat-result">0</span>g</span>
+                    <div class="macro-card p-4 text-center">
+                        <div
+                            class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-2">
+                            <i class="fa-solid fa-droplet text-amber-400 text-xs"></i>
                         </div>
-                        <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Fat</div>
+                        <div class="text-xl font-black text-white"><span id="fat-result">0</span><span
+                                class="text-xs text-slate-500 font-medium">g</span></div>
+                        <div class="text-xs text-amber-400 mt-1"><span id="fat-pct">0</span>%</div>
+                        <div class="h-1 bg-slate-800 rounded-full mt-2 overflow-hidden">
                             <div id="fat-bar" class="macro-bar-fill bg-gradient-to-r from-amber-400 to-orange-500">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Donut Chart -->
-                <div class="flex items-center gap-6">
-                    <div class="relative w-28 h-28 flex-shrink-0">
-                        <canvas id="macroChart" width="112" height="112"></canvas>
+                <!-- Donut + Tips Row -->
+                <div class="flex items-center gap-4">
+                    <div class="relative w-24 h-24 flex-shrink-0">
+                        <canvas id="macroChart" width="96" height="96"></canvas>
                         <div class="absolute inset-0 flex items-center justify-center">
-                            <i class="fa-solid fa-fire-flame-curved text-amber-400 text-lg"></i>
+                            <i class="fa-solid fa-fire-flame-curved text-amber-400"></i>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-2 text-sm">
-                        <div class="flex items-center gap-2">
-                            <div class="w-2.5 h-2.5 rounded-full bg-red-400 flex-shrink-0"></div><span
-                                class="text-slate-400">Protein — <span id="prot-pct"
-                                    class="text-white font-bold">0</span>%</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-2.5 h-2.5 rounded-full bg-blue-400 flex-shrink-0"></div><span
-                                class="text-slate-400">Carbs — <span id="carb-pct"
-                                    class="text-white font-bold">0</span>%</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0"></div><span
-                                class="text-slate-400">Fat — <span id="fat-pct"
-                                    class="text-white font-bold">0</span>%</span>
+                    <!-- Health Tip -->
+                    <div id="health-tip" class="tip-box px-4 py-3 flex-1">
+                        <div class="flex items-start gap-2">
+                            <i class="fa-solid fa-lightbulb text-emerald-400 text-sm mt-0.5 flex-shrink-0"></i>
+                            <p id="health-tip-text" class="text-xs text-slate-300 leading-relaxed"></p>
                         </div>
                     </div>
                 </div>
@@ -596,11 +708,11 @@
             const file = files[0];
 
             if (!file.type.startsWith('image/')) {
-                alert('Please upload a valid image file (JPG/PNG).');
+                showToast('Please upload a valid image file (JPG or PNG).', 'error');
                 return;
             }
             if (file.size > 5 * 1024 * 1024) {
-                alert('File size exceeds 5MB limit.');
+                showToast('File too large. Maximum allowed size is 5MB.', 'warning');
                 return;
             }
 
@@ -650,7 +762,7 @@
                     body: formData
                 });
 
-                if (response.status === 429) throw new Error('Rate limit exceeded! Please wait before submitting again.');
+                if (response.status === 429) throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
                 if (!response.ok) {
                     const err = await response.json();
                     throw new Error(err.detail || 'Server error occurred');
@@ -661,8 +773,9 @@
                 if (elapsed < 1500) await new Promise(r => setTimeout(r, 1500 - elapsed));
 
                 showResults(data);
+                showToast('Nutrition analysis complete!', 'success');
             } catch (err) {
-                alert('API Error: ' + err.message);
+                showToast('Error: ' + err.message, 'error');
                 showEmpty();
             }
         });
@@ -685,22 +798,30 @@
 
             const macros = data.nutrition_estimates;
             const dataSource = data.data_source_used;
+            const detectedName = data.detected_food_name;
 
-            // Animated counter
+            // Detected food banner
+            const banner = document.getElementById('detected-food-banner');
+            if (detectedName && detectedName !== 'Unknown (AI Vision Model)') {
+                document.getElementById('detected-food-name').textContent = detectedName.charAt(0).toUpperCase() + detectedName.slice(1);
+                banner.classList.remove('hidden');
+                banner.classList.add('flex');
+            } else {
+                banner.classList.add('hidden');
+            }
+
+            // Animated counters on all values
             animateCounter('cal-result', 0, macros.calories, 900);
+            animateCounter('prot-result', 0, macros.protein_grams, 700);
+            animateCounter('carb-result', 0, macros.carbs_grams, 700);
+            animateCounter('fat-result', 0, macros.fat_grams, 700);
+            animateCounter('mass-result', 0, macros.mass_grams, 600);
 
-            // Set values
-            document.getElementById('prot-result').textContent = macros.protein_grams;
-            document.getElementById('carb-result').textContent = macros.carbs_grams;
-            document.getElementById('fat-result').textContent = macros.fat_grams;
-            document.getElementById('mass-result').textContent = macros.mass_grams;
-
-            // Progress bars
+            // Macro percentages
             const total = macros.protein_grams + macros.carbs_grams + macros.fat_grams || 1;
             const protPct = Math.round((macros.protein_grams / total) * 100);
             const carbPct = Math.round((macros.carbs_grams / total) * 100);
             const fatPct = Math.round((macros.fat_grams / total) * 100);
-
             document.getElementById('prot-pct').textContent = protPct;
             document.getElementById('carb-pct').textContent = carbPct;
             document.getElementById('fat-pct').textContent = fatPct;
@@ -709,13 +830,13 @@
                 document.getElementById('prot-bar').style.width = protPct + '%';
                 document.getElementById('carb-bar').style.width = carbPct + '%';
                 document.getElementById('fat-bar').style.width = fatPct + '%';
-            }, 100);
+            }, 150);
 
             // Badge
             const badge = document.getElementById('datasource-badge');
             if (dataSource) {
                 badge.textContent = dataSource;
-                badge.className = dataSource.includes('NLP')
+                badge.className = dataSource.includes('NLP') || dataSource.includes('DB')
                     ? 'text-xs font-semibold px-3 py-1.5 rounded-full badge-purple uppercase tracking-wider'
                     : 'text-xs font-semibold px-3 py-1.5 rounded-full badge-blue uppercase tracking-wider';
                 badge.classList.remove('hidden');
@@ -723,9 +844,22 @@
                 badge.classList.add('hidden');
             }
 
+            // Smart Health Tip
+            const tipEl = document.getElementById('health-tip-text');
+            if (macros.protein_grams > 25) {
+                tipEl.textContent = `Great protein source! ${macros.protein_grams}g of protein supports muscle repair and keeps you full longer.`;
+            } else if (macros.carbs_grams > 50) {
+                tipEl.textContent = `High-carb meal detected (${macros.carbs_grams}g). Great for energy! Consider pairing with a protein source for balance.`;
+            } else if (macros.fat_grams > 20) {
+                tipEl.textContent = `This meal is fat-rich (${macros.fat_grams}g). Healthy fats from nuts and avocado support brain function.`;
+            } else if (macros.calories < 200) {
+                tipEl.textContent = `Light meal at ${macros.calories} kcal. This can be great as a snack. Consider adding more for a full meal.`;
+            } else {
+                tipEl.textContent = `Balanced meal with ${macros.calories} kcal. Protein: ${macros.protein_grams}g, Carbs: ${macros.carbs_grams}g, Fat: ${macros.fat_grams}g.`;
+            }
+
             // Donut chart
             renderChart(macros.protein_grams, macros.carbs_grams, macros.fat_grams);
-
             resultsContainer.classList.remove('hidden');
         }
 
@@ -776,6 +910,20 @@
                     cutout: '72%'
                 }
             });
+        }
+
+        // === Toast Notification System ===
+        function showToast(message, type = 'error') {
+            const icons = { error: 'fa-circle-xmark', success: 'fa-circle-check', warning: 'fa-triangle-exclamation' };
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `<i class="fa-solid ${icons[type]} toast-icon"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('removing');
+                toast.addEventListener('animationend', () => toast.remove());
+            }, 4000);
         }
     </script>
 </body>
