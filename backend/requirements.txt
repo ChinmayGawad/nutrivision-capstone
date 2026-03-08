@@ -1,9 +1,9 @@
 fastapi
 uvicorn[standard]
 python-multipart
-tensorflow-cpu==2.13.0
+ultralytics
 Pillow
-numpy<1.25.0
+numpy
 requests
 python-jose[cryptography]
 PyJWT

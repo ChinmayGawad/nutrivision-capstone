@@ -1,4 +1,5 @@
 import os
+import csv as _csv
 import time
 import jwt
 import requests
@@ -10,7 +11,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.middleware import SlowAPIMiddleware
 import numpy as np
-import tensorflow as tf
+import numpy as np
 from PIL import Image
 import io
 from dotenv import load_dotenv
@@ -37,147 +38,102 @@ app.add_exception_handler(429, lambda request, exc: JSONResponse(
 app.add_middleware(SlowAPIMiddleware) # CyberSecurity: Prevents DDoS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow UI frontend to connect
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://YOUR-FRONTEND-APP-NAME.netlify.app", "*"], # Added * temporarily for local testing
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# --- [Image Classification Model Loading] ---
-print("Loading MobileNetV2 Classifier for Food Recognition...")
+# --- [YOLOv8 Custom Food Detection Model (256 Classes)] ---
+# Trained on UECFOOD256 dataset: rice, pizza, sushi, ramen, steak, curry, etc.
+# Falls back to generic yolov8n.pt if custom weights are not found.
+
+CUSTOM_YOLO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "runs", "detect", "food_detector5", "weights", "best.pt")
+FALLBACK_YOLO = "yolov8n.pt"
+
 try:
-    classifier_model = tf.keras.applications.MobileNetV2(weights='imagenet')
-    print("MobileNetV2 Classifier loaded successfully!")
+    from ultralytics import YOLO
+    if os.path.exists(CUSTOM_YOLO_PATH):
+        print(f"[YOLO] Loading CUSTOM trained food model (256 classes)...")
+        yolo_model = YOLO(CUSTOM_YOLO_PATH)
+        print("[YOLO] Custom food model loaded successfully!")
+    else:
+        print(f"[YOLO] Custom model not found. Loading generic {FALLBACK_YOLO}...")
+        yolo_model = YOLO(FALLBACK_YOLO)
+        print("[YOLO] Generic model loaded.")
+    USE_YOLO = True
+except ImportError:
+    print("[YOLO] ultralytics not installed. Multi-food detection disabled.")
+    yolo_model = None
+    USE_YOLO = False
 except Exception as e:
-    print(f"Warning: Could not load MobileNetV2: {e}")
-    classifier_model = None
-
-# --- [Deep Learning Regression Model Loading] ---
-print("Loading Trained Deep Learning Model...")
-# Path is relative to this script — works on Windows locally AND on Render (Linux)
-WEIGHTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "best_macro_model.weights.h5")
-IMG_SIZE = 224
-
-macro_model = None
-
-if os.path.exists(WEIGHTS_PATH):
-    print(f"Found weights at {WEIGHTS_PATH}. Rebuilding architecture...")
-    try:
-        _base = tf.keras.applications.EfficientNetB0(
-            input_shape=(IMG_SIZE, IMG_SIZE, 3),
-            include_top=False,
-            weights='imagenet'  # Must match train.py initialization
-        )
-
-        # Match the exact freezing logic from train.py so the geometry of 
-        # trainable vs non-trainable weights aligns perfectly
-        for layer in _base.layers[:-30]:
-            layer.trainable = False
-        for layer in _base.layers[-30:]:
-            layer.trainable = True
-
-        macro_model = tf.keras.Sequential([
-            _base,
-            tf.keras.layers.GlobalAveragePooling2D(),
-            tf.keras.layers.Dropout(0.3),
-            tf.keras.layers.Dense(5, activation='relu')
-        ])
-        # Build by running a dummy input so weights can load
-        macro_model(tf.zeros([1, IMG_SIZE, IMG_SIZE, 3]))
-        macro_model.load_weights(WEIGHTS_PATH, by_name=True, skip_mismatch=True)
-        print("Model loaded successfully from weights!")
-    except Exception as e:
-        import traceback
-        print(f"Warning: Could not load model weights: {e}")
-        traceback.print_exc()
-        print("Continuing with initialized (untrained) architecture...")
-        # We intentionally DO NOT set macro_model = None here anymore.
-        # This forces `predict_image` to use the architecture (even if weights failed)
-        # rather than fully defaulting to the hardcoded [150, 100, 5, 20, 8] array.
-else:
-    import traceback
-    print(f"Warning: Trained model weights not found at {WEIGHTS_PATH}! Falling back to mock predictions.")
+    print(f"[YOLO] Error loading YOLO model: {e}")
+    yolo_model = None
+    USE_YOLO = False
 
 
-def predict_image(image_bytes):
-    """
-    Uses the EfficientNetB0 custom trained model to predict macros.
-    """
-    if macro_model is None:
-        # Fallback: realistic average values per 100g of food
-        # These will be overridden by Edamam if food_name is provided
-        return [
-            150.0,  # Calories (kcal per ~100g)
-            100.0,  # Mass (g)
-            5.0,    # Fat (g)
-            20.0,   # Carbs (g)
-            8.0     # Protein (g)
-        ]
-    
-    # Process incoming image to match EfficientNetB0 input (224x224x3)
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    img = img.resize((224, 224))
-    
-    img_array = tf.keras.utils.img_to_array(img)
-    img_array = tf.keras.applications.efficientnet.preprocess_input(img_array)
-    img_array = tf.expand_dims(img_array, 0) # Create a batch of 1
-    
-    # Predict
-    # Output structure: [Calories, Mass, Fat, Carb, Protein]
-    predictions = macro_model.predict(img_array)
-    res = predictions[0]
-    
-    # Ensure no negative values (ReLU mostly handles this but just in case)
-    return [max(0, float(val)) for val in res]
+# --- [Built-in Nutrition Database — Nutrition5k Dataset + Manual Overrides] ---
+# Dynamically loaded from ingredients_metadata.csv (555 real foods from our dataset!)
+# Values in the CSV are per gram; we convert to per 100g for consistency.
+def _load_nutrition_db():
+    db = {}
+    csv_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "Dataset", "ingredients_metadata.csv")
+    )
+    if os.path.exists(csv_path):
+        try:
+            with open(csv_path, encoding="utf-8") as f:
+                reader = _csv.DictReader(f)
+                for row in reader:
+                    name = row.get("ingr_name", "").strip().lower()
+                    try:
+                        # CSV columns: cal/g, fat(g), carb(g), protein(g)  — per gram
+                        cal   = float(row.get("cal/g", 0) or 0) * 100
+                        fat   = float(row.get("fat(g)", 0) or 0) * 100
+                        carbs = float(row.get("carb(g)", 0) or 0) * 100
+                        prot  = float(row.get("protein(g)", 0) or 0) * 100
+                        if name and cal > 0:
+                            db[name] = {"calories": round(cal, 1), "fat": round(fat, 1),
+                                        "carbs": round(carbs, 1), "protein": round(prot, 1)}
+                    except (ValueError, TypeError):
+                        continue
+            print(f"[NutritionDB] Loaded {len(db)} foods from Nutrition5k CSV")
+        except Exception as e:
+            print(f"[NutritionDB] Could not read CSV: {e}")
+    else:
+        print(f"[NutritionDB] ingredients_metadata.csv not found — using manual DB only")
 
-# --- [Built-in Nutrition Database — USDA per 100g values] ---
-# Used as the primary source when user types a food name.
-# Values are per 100g; we scale to actual serving size automatically.
-NUTRITION_DB = {
-    # eggs & dairy
-    "egg":              {"calories": 155, "fat": 11.0, "carbs": 1.1,  "protein": 13.0},
-    "boiled egg":       {"calories": 155, "fat": 11.0, "carbs": 1.1,  "protein": 13.0},
-    "fried egg":        {"calories": 196, "fat": 15.0, "carbs": 0.8,  "protein": 14.0},
-    "scrambled egg":    {"calories": 149, "fat": 9.5,  "carbs": 1.6,  "protein": 10.0},
-    "milk":             {"calories": 61,  "fat": 3.3,  "carbs": 4.8,  "protein": 3.2},
-    "cheese":           {"calories": 402, "fat": 33.0, "carbs": 1.3,  "protein": 25.0},
-    "yogurt":           {"calories": 59,  "fat": 0.4,  "carbs": 3.6,  "protein": 10.0},
-    # meat & fish
-    "chicken breast":   {"calories": 165, "fat": 3.6,  "carbs": 0.0,  "protein": 31.0},
-    "chicken":          {"calories": 165, "fat": 3.6,  "carbs": 0.0,  "protein": 31.0},
-    "beef":             {"calories": 250, "fat": 15.0, "carbs": 0.0,  "protein": 26.0},
-    "salmon":           {"calories": 208, "fat": 13.0, "carbs": 0.0,  "protein": 20.0},
-    "tuna":             {"calories": 132, "fat": 1.0,  "carbs": 0.0,  "protein": 29.0},
-    "shrimp":           {"calories": 99,  "fat": 1.7,  "carbs": 0.2,  "protein": 24.0},
-    # grains & bread
-    "rice":             {"calories": 130, "fat": 0.3,  "carbs": 28.0, "protein": 2.7},
-    "white rice":       {"calories": 130, "fat": 0.3,  "carbs": 28.0, "protein": 2.7},
-    "brown rice":       {"calories": 112, "fat": 0.9,  "carbs": 24.0, "protein": 2.6},
-    "bread":            {"calories": 265, "fat": 3.2,  "carbs": 49.0, "protein": 9.0},
-    "pasta":            {"calories": 131, "fat": 1.1,  "carbs": 25.0, "protein": 5.0},
-    "oats":             {"calories": 389, "fat": 6.9,  "carbs": 66.0, "protein": 17.0},
-    # vegetables
-    "broccoli":         {"calories": 34,  "fat": 0.4,  "carbs": 7.0,  "protein": 2.8},
-    "carrot":           {"calories": 41,  "fat": 0.2,  "carbs": 10.0, "protein": 0.9},
-    "potato":           {"calories": 77,  "fat": 0.1,  "carbs": 17.0, "protein": 2.0},
-    "salad":            {"calories": 15,  "fat": 0.2,  "carbs": 2.9,  "protein": 1.3},
-    "spinach":          {"calories": 23,  "fat": 0.4,  "carbs": 3.6,  "protein": 2.9},
-    # fruits
-    "banana":           {"calories": 89,  "fat": 0.3,  "carbs": 23.0, "protein": 1.1},
-    "apple":            {"calories": 52,  "fat": 0.2,  "carbs": 14.0, "protein": 0.3},
-    "orange":           {"calories": 47,  "fat": 0.1,  "carbs": 12.0, "protein": 0.9},
-    # other common foods
-    "pizza":            {"calories": 266, "fat": 10.0, "carbs": 33.0, "protein": 11.0},
-    "burger":           {"calories": 295, "fat": 14.0, "carbs": 24.0, "protein": 17.0},
-    "sandwich":         {"calories": 218, "fat": 8.0,  "carbs": 28.0, "protein": 10.0},
-    "soup":             {"calories": 50,  "fat": 1.5,  "carbs": 7.0,  "protein": 3.0},
-    "sushi":            {"calories": 150, "fat": 0.6,  "carbs": 30.0, "protein": 6.0},
-    "chocolate":        {"calories": 546, "fat": 31.0, "carbs": 60.0, "protein": 5.0},
-    "peanut butter":    {"calories": 588, "fat": 50.0, "carbs": 20.0, "protein": 25.0},
-    "avocado":          {"calories": 160, "fat": 15.0, "carbs": 9.0,  "protein": 2.0},
-    "almonds":          {"calories": 579, "fat": 50.0, "carbs": 22.0, "protein": 21.0},
-}
+    # Manual overrides / items not in Nutrition5k (egg varieties, Indian foods, etc.)
+    manual = {
+        "egg":            {"calories": 155, "fat": 11.0, "carbs": 1.1,  "protein": 13.0},
+        "boiled egg":     {"calories": 155, "fat": 11.0, "carbs": 1.1,  "protein": 13.0},
+        "fried egg":      {"calories": 196, "fat": 15.0, "carbs": 0.8,  "protein": 14.0},
+        "omelette":       {"calories": 154, "fat": 11.0, "carbs": 0.9,  "protein": 11.0},
+        "omelet":         {"calories": 154, "fat": 11.0, "carbs": 0.9,  "protein": 11.0},
+        "egg omelette":   {"calories": 154, "fat": 11.0, "carbs": 0.9,  "protein": 11.0},
+        "egg omelet":     {"calories": 154, "fat": 11.0, "carbs": 0.9,  "protein": 11.0},
+        "poached egg":    {"calories": 143, "fat": 9.5,  "carbs": 0.7,  "protein": 13.0},
+        "pizza":          {"calories": 266, "fat": 10.0, "carbs": 33.0, "protein": 11.0},
+        "burger":         {"calories": 295, "fat": 14.0, "carbs": 24.0, "protein": 17.0},
+        "roti":           {"calories": 297, "fat": 3.7,  "carbs": 60.0, "protein": 9.0},
+        "chapati":        {"calories": 297, "fat": 3.7,  "carbs": 60.0, "protein": 9.0},
+        "dal":            {"calories": 116, "fat": 0.4,  "carbs": 20.0, "protein": 8.0},
+        "idli":           {"calories": 58,  "fat": 0.4,  "carbs": 11.0, "protein": 2.0},
+        "dosa":           {"calories": 133, "fat": 2.7,  "carbs": 22.0, "protein": 4.0},
+        "biryani":        {"calories": 163, "fat": 5.0,  "carbs": 22.0, "protein": 8.0},
+        "paneer":         {"calories": 265, "fat": 20.0, "carbs": 3.6,  "protein": 18.0},
+        "french fries":   {"calories": 312, "fat": 15.0, "carbs": 41.0, "protein": 3.4},
+        "donut":          {"calories": 452, "fat": 25.0, "carbs": 51.0, "protein": 5.0},
+        "pancake":        {"calories": 227, "fat": 8.0,  "carbs": 36.0, "protein": 6.0},
+        "ice cream":      {"calories": 207, "fat": 11.0, "carbs": 24.0, "protein": 3.5},
+        "hot dog":        {"calories": 290, "fat": 17.0, "carbs": 22.0, "protein": 11.0},
+    }
+    db.update(manual)   # manual entries win on overlap
+    return db
+
+NUTRITION_DB = _load_nutrition_db()
+print(f"[NutritionDB] Total entries available: {len(NUTRITION_DB)}")
 
 def lookup_local_nutrition(food_query: str, serving_size_g: float):
     """
@@ -191,12 +147,16 @@ def lookup_local_nutrition(food_query: str, serving_size_g: float):
     if query_lower in NUTRITION_DB:
         matched = NUTRITION_DB[query_lower]
     else:
-        # Partial match: find any entry whose key appears in the query or vice versa
+        # Partial match: only use if the query is a single word or if it's a very close match
+        # This prevents "chicken rice" from matching raw "chicken" (which has 0 carbs)
         for key, values in NUTRITION_DB.items():
-            if key in query_lower or query_lower in key:
+            if key == query_lower or (len(query_lower.split()) == 1 and (key in query_lower or query_lower in key)):
                 matched = values
                 print(f"[LocalDB] Partial match: '{query_lower}' -> '{key}'")
                 break
+        
+        if not matched:
+            print(f"[LocalDB] No safe local match found for '{query_lower}'. Will try API.")
 
     if matched:
         scale = serving_size_g / 100.0
@@ -327,104 +287,124 @@ async def predict_nutrition(
     if len(image_bytes) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large. Max 5MB allowed.")
 
-    # 3. Multimodal Food Recognition (Classification)
-    detected_name = food_name
-    detected_confidence = 0.0
-    
-    if not detected_name and classifier_model is not None:
-        try:
-            print("[Classifier] Running ImageNet Food Recognition...")
-            img_clf = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-            img_clf = img_clf.resize((224, 224))
-            img_array_clf = tf.keras.utils.img_to_array(img_clf)
-            img_array_clf = tf.keras.applications.mobilenet_v2.preprocess_input(img_array_clf)
-            img_array_clf = tf.expand_dims(img_array_clf, 0)
-            
-            # Predict top 3 classes
-            preds = classifier_model.predict(img_array_clf)
-            decoded = tf.keras.applications.mobilenet_v2.decode_predictions(preds, top=3)[0]
-            
-            # Use the highest confidence guess
-            best_guess = decoded[0][1].replace("_", " ")
-            detected_confidence = float(decoded[0][2])
-            
-            # Only trust it if confidence > 10%
-            if detected_confidence > 0.10:
-                detected_name = best_guess
-                print(f"[Classifier] AI Recognition Guessed: '{detected_name}' ({detected_confidence*100:.1f}%)")
-            else:
-                print(f"[Classifier] AI Recognition was too uncertain. Top guess was: '{best_guess}' ({detected_confidence*100:.1f}%)")
-        except Exception as e:
-            print(f"[Classifier] Error running classification: {e}")
-
-    # 4. Deep Learning: Run Regression Inference (Nutrition5k Model)
+    # 3. Object Detection (YOLOv8)
     try:
-        prediction = predict_image(image_bytes)
+        detected_foods = []
         
-        # Base model assumption: prediction[1] is the predicted Mass in grams
-        predicted_mass_g = prediction[1]
-        
-        # Parse User's Manual Mass if provided
-        calculated_mass_g = predicted_mass_g
-        if serving_size is not None:
-            if serving_unit == "oz":
-                calculated_mass_g = serving_size * 28.3495
-            elif serving_unit == "lbs":
-                calculated_mass_g = serving_size * 453.592
-            else: # Defaults to grams
-                calculated_mass_g = serving_size
+        # Check if the user bypassed AI via Manual Text Input
+        if food_name and food_name.strip() != "":
+            detected_foods.append(food_name.strip())
+            print(f"[YOLO] User override: {food_name}")
+        elif USE_YOLO and yolo_model is not None:
+            try:
+                print("[YOLO] Scanning for multiple foods...")
+                # We must save the bytes to a temp file for Ultralytics 
+                # (YOLO prefers file paths or PIL Images)
+                img_clf = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+                
+                # Run YOLO prediction with higher confidence threshold and NMS (Non-Maximum Suppression)
+                # conf=0.50 means the AI must be 50% sure it's correct (reduces false positives)
+                # iou=0.45 prevents overlapping bounding boxes for the same food item
+                results = yolo_model(img_clf, conf=0.50, iou=0.45, verbose=False)
+                
+                # Loop through all bounding boxes found
+                for box in results[0].boxes:
+                    cls_name = yolo_model.names[int(box.cls)].replace("_", " ")
+                    detected_foods.append(cls_name)
+                
+                # Remove duplicate detections (same food detected multiple times)
+                detected_foods = list(set(detected_foods))
+                
+                if detected_foods:
+                    print(f"[YOLO] Found foods: {detected_foods}")
+                else:
+                    print("[YOLO] No confident food objects detected.")
+            except Exception as e:
+                print(f"[YOLO] Error running object detection: {e}")
 
-        # Scale AI macros linearly based on mass
-        # Safeguard against zero division if the AI predicted 0 mass natively
-        multiplier = 1.0
-        if predicted_mass_g > 0:
-            multiplier = calculated_mass_g / predicted_mass_g
-            
-        ai_macros = {
-            "calories": prediction[0] * multiplier,
-            "mass_grams": calculated_mass_g,
-            "fat_grams": prediction[2] * multiplier,
-            "carbs_grams": prediction[3] * multiplier,
-            "protein_grams": prediction[4] * multiplier
+        # 4. Nutrition Calculation Loop
+        # We will sum the macros for ALL detected foods!
+        total_macros = {
+            "calories": 0.0,
+            "mass_grams": 0.0, 
+            "fat_grams": 0.0,
+            "carbs_grams": 0.0,
+            "protein_grams": 0.0
         }
         
-        print(f"AI Raw: {prediction}")
-        print(f"AI Scaled: {ai_macros}")
-
-        # 5. Multimodal NLP Override
-        # If the user typed a food name (or the AI Classifier guessed one), query Edamam/Local DB
-        final_macros = ai_macros
-        data_source = "Deep Learning Vision"
+        # Determine the serving size per item
+        # If the user provided a total manual weight, distribute it evenly.
+        # Otherwise, default to 150g per detected item.
+        items_count = len(detected_foods) if len(detected_foods) > 0 else 1
+        per_item_mass_g = 150.0 # Default fallback
         
-        if detected_name and detected_name.strip() != "":
-            nlp_macros = fetch_edamam_nutrition(food_query=detected_name.strip(), serving_size_g=calculated_mass_g)
-            if nlp_macros:
-                # Use Verified Database exclusively when food name is known (either typed or AI-detected)
-                final_macros = {
-                    "calories": nlp_macros["calories"],
-                    "mass_grams": calculated_mass_g,
-                    "fat_grams": nlp_macros["fat_grams"],
-                    "carbs_grams": nlp_macros["carbs_grams"],
-                    "protein_grams": nlp_macros["protein_grams"],
-                }
-                
-                # Update data source description
-                if food_name:
-                    data_source = "NLP Database (Verified)"
-                else:
-                    data_source = f"AI Classifier + DB ({detected_confidence*100:.0f}% Conf)"
+        if serving_size is not None:
+            if serving_unit == "oz":
+                per_item_mass_g = (serving_size * 28.3495) / items_count
+            elif serving_unit == "lbs":
+                per_item_mass_g = (serving_size * 453.592) / items_count
+            else: # Defaults to grams
+                per_item_mass_g = serving_size / items_count
 
+        data_source_used = "Unknown"
+
+        # 5. Look up each detected food and sum the macros
+        if not detected_foods:
+            # If no objects detected, provide safe default
+            detected_foods = ["Unknown (AI Vision Failed)"]
+            data_source_used = "Generic Fallback"
+            total_macros = {
+                "calories": 250.0,
+                "mass_grams": per_item_mass_g,
+                "fat_grams": 10.0,
+                "carbs_grams": 25.0,
+                "protein_grams": 15.0
+            }
+        else:
+            data_source_used = "YOLOv8 + Nutrition DB"
+            total_mass_g = 0.0
+            
+            for food in detected_foods:
+                # 1. Try local DB first. 2. Fall back to Edamam API if not found.
+                item_macros = fetch_edamam_nutrition(food_query=food, serving_size_g=per_item_mass_g)
+                
+                if item_macros:
+                    total_macros["calories"] += item_macros["calories"]
+                    total_macros["fat_grams"] += item_macros["fat_grams"]
+                    total_macros["carbs_grams"] += item_macros["carbs_grams"]
+                    total_macros["protein_grams"] += item_macros["protein_grams"]
+                    total_mass_g += item_macros.get("mass_grams", per_item_mass_g)
+                else:
+                    print(f"[YOLO] Warning: {food} detected but not found in DB.")
+            
+            total_macros["mass_grams"] = total_mass_g
+            
+            # Safety check: if somehow it detected foods but ALL lookups failed, use fallback
+            if total_macros["calories"] < 1:
+                 print("[YOLO] AI prediction was 0cals. Using generic placeholder.")
+                 total_macros = {
+                    "calories": 250.0,
+                    "mass_grams": 150.0,
+                    "fat_grams": 10.0,
+                    "carbs_grams": 25.0,
+                    "protein_grams": 15.0
+                }
+                 data_source_used = "Generic Fallback (Lookups Failed)"
+
+        # Join the list of detected foods into a nice string for the UI banner
+        final_food_name = ", ".join([f.capitalize() for f in detected_foods])
+        
         return {
             "status": "success",
             "filename": file.filename,
-            "detected_food_name": detected_name if detected_name else "Unknown (AI Vision Model)",
-            "data_source_used": data_source,
+            "detected_food_name": final_food_name,
+            "data_source_used": data_source_used,
             "nutrition_estimates": {
-                "calories": round(final_macros["calories"], 1),
-                "mass_grams": round(final_macros["mass_grams"], 1),
-                "fat_grams": round(final_macros["fat_grams"], 1),
-                "carbs_grams": round(final_macros["carbs_grams"], 1),
-                "protein_grams": round(final_macros["protein_grams"], 1)
+                "calories": round(total_macros["calories"], 1),
+                "mass_grams": round(total_macros["mass_grams"], 1),
+                "fat_grams": round(total_macros["fat_grams"], 1),
+                "carbs_grams": round(total_macros["carbs_grams"], 1),
+                "protein_grams": round(total_macros["protein_grams"], 1)
             }
         }
     except Exception as e:

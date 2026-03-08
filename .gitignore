@@ -18,9 +18,22 @@ env/
 
 # Dataset (too large for GitHub)
 Dataset/
+datasets/
+test_images/
 
-# Old/broken model file
-macro_model.h5
+# Models (too large for GitHub)
+*.pt
+*.h5
+weights/
+best.pt
+last.pt
+
+# YOLOv8 Training Runs
+runs/
+
+# Jupyter Notebooks and Checkpoints
+.ipynb_checkpoints/
+*.ipynb
 
 # IDE
 .vscode/
