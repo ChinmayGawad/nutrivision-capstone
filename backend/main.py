@@ -126,8 +126,22 @@ def _load_nutrition_db():
         "french fries":   {"calories": 312, "fat": 15.0, "carbs": 41.0, "protein": 3.4},
         "donut":          {"calories": 452, "fat": 25.0, "carbs": 51.0, "protein": 5.0},
         "pancake":        {"calories": 227, "fat": 8.0,  "carbs": 36.0, "protein": 6.0},
-        "ice cream":      {"calories": 207, "fat": 11.0, "carbs": 24.0, "protein": 3.5},
         "hot dog":        {"calories": 290, "fat": 17.0, "carbs": 22.0, "protein": 11.0},
+        # Japanese Foods from UECFOOD256 for Demo
+        "okinawa soba":   {"calories": 420, "fat": 12.0, "carbs": 60.0, "protein": 18.0},
+        "goya chanpuru":  {"calories": 240, "fat": 15.0, "carbs": 12.0, "protein": 14.0},
+        "sushi":          {"calories": 350, "fat": 2.0,  "carbs": 75.0, "protein": 11.0},
+        "ramen":          {"calories": 436, "fat": 16.0, "carbs": 55.0, "protein": 15.0},
+        "takoyaki":       {"calories": 310, "fat": 14.0, "carbs": 38.0, "protein": 9.0},
+        "okonomiyaki":    {"calories": 520, "fat": 22.0, "carbs": 65.0, "protein": 17.0},
+        "udon":           {"calories": 280, "fat": 2.0,  "carbs": 55.0, "protein": 10.0},
+        "curry":          {"calories": 480, "fat": 20.0, "carbs": 60.0, "protein": 12.0},
+        "tempura":        {"calories": 320, "fat": 20.0, "carbs": 30.0, "protein": 6.0},
+        "yakitori":       {"calories": 150, "fat": 6.0,  "carbs": 2.0,  "protein": 22.0},
+        "tonkatsu":       {"calories": 550, "fat": 35.0, "carbs": 30.0, "protein": 25.0},
+        "miso soup":      {"calories": 40,  "fat": 1.5,  "carbs": 4.0,  "protein": 3.0},
+        "gyudon":         {"calories": 650, "fat": 25.0, "carbs": 85.0, "protein": 22.0},
+        "karaage":        {"calories": 290, "fat": 18.0, "carbs": 12.0, "protein": 16.0},
     }
     db.update(manual)   # manual entries win on overlap
     return db
