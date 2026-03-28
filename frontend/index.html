@@ -632,11 +632,21 @@
             <span class="flex items-center gap-1.5"><i class="fa-brands fa-python text-emerald-800"></i> FastAPI
                 Backend</span>
             <span class="flex items-center gap-1.5"><i class="fa-solid fa-cloud text-blue-900"></i> Cloud Hosted</span>
-            <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-purple-900"></i> JWT
-                Secured</span>
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-purple-900"></i> JWT +
+                RBAC Secured</span>
             <span class="flex items-center gap-1.5"><i class="fa-solid fa-microchip text-slate-700"></i> YOLOv8
                 Multi-Food
                 Model</span>
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-file-shield text-emerald-800"></i> Audit
+                Logged</span>
+        </div>
+        <!-- Privacy Policy & DPDP Act / GDPR Compliance Link -->
+        <div class="mt-4 text-center">
+            <a href="#" onclick="window.open(API_BASE + '/privacy', '_blank')" 
+               class="text-slate-600 hover:text-emerald-400 text-xs font-medium transition-colors cursor-pointer"
+               style="text-decoration: underline; text-underline-offset: 3px;">
+                <i class="fa-solid fa-scale-balanced mr-1"></i>Privacy Policy · DPDP Act 2023 · GDPR Compliance
+            </a>
         </div>
 
     </div>
@@ -746,7 +756,7 @@
                 showToast('Nutrition analysis complete!', 'success');
             } catch (err) {
                 showToast('Error: ' + err.message, 'error');
-                showEmpty();
+                showError(err.message);
             }
         });
 
@@ -760,6 +770,34 @@
             loadingState.classList.add('hidden');
             resultsContainer.classList.add('hidden');
             emptyState.classList.remove('hidden');
+        }
+
+        function showError(message) {
+            loadingState.classList.add('hidden');
+            emptyState.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+
+            // Hide the normal results content and show an error card instead
+            const banner = document.getElementById('detected-food-banner');
+            banner.classList.remove('hidden');
+            banner.classList.add('flex');
+            document.getElementById('detected-food-name').textContent = 'Detection Failed';
+
+            resultsContainer.innerHTML = `
+                <div style="padding: 2rem; text-align: center;">
+                    <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                        <i class="fa-solid fa-circle-exclamation" style="color: #ef4444; font-size: 1.5rem;"></i>
+                    </div>
+                    <h3 style="color: #f87171; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">Food Not Recognized</h3>
+                    <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.5; max-width: 320px; margin: 0 auto 1.5rem;">${message}</p>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: center;">
+                        <span style="color: #64748b; font-size: 0.75rem;"><i class="fa-solid fa-lightbulb" style="color: #fbbf24; margin-right: 4px;"></i> Tips for better results:</span>
+                        <span style="color: #64748b; font-size: 0.75rem;">• Use a well-lit, close-up photo of the food</span>
+                        <span style="color: #64748b; font-size: 0.75rem;">• Make sure the food is clearly visible</span>
+                        <span style="color: #64748b; font-size: 0.75rem;">• Try common foods like pizza, burger, egg, ramen</span>
+                    </div>
+                </div>
+            `;
         }
 
         function showResults(data) {

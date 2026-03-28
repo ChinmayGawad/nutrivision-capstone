@@ -43,3 +43,10 @@ runs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Runtime logs (security audit trail — keep off version control)
+logs/
+*.log
+
+# Temporary files
+tmp/
