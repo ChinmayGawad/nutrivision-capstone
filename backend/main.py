@@ -20,6 +20,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 # In a real environment, load this safely from an environment variable!
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "my_super_secret_jwt_key")
 ALGORITHM = "HS256"
@@ -203,6 +204,104 @@ def _load_nutrition_db():
         "soba":           {"calories": 300, "fat": 2.0,  "carbs": 60.0, "protein": 12.0},
         "yakisoba":       {"calories": 450, "fat": 15.0, "carbs": 65.0, "protein": 12.0},
         "gyoza":          {"calories": 250, "fat": 12.0, "carbs": 25.0, "protein": 10.0},
+        # Indian / South Asian Foods
+        "momos":          {"calories": 200, "fat": 8.0,  "carbs": 25.0, "protein": 10.0},
+        "momo":           {"calories": 200, "fat": 8.0,  "carbs": 25.0, "protein": 10.0},
+        "steamed momos":  {"calories": 180, "fat": 6.0,  "carbs": 25.0, "protein": 10.0},
+        "fried momos":    {"calories": 260, "fat": 14.0, "carbs": 28.0, "protein": 9.0},
+        "samosa":         {"calories": 262, "fat": 14.0, "carbs": 28.0, "protein": 5.0},
+        "vada pav":       {"calories": 290, "fat": 15.0, "carbs": 35.0, "protein": 5.0},
+        "pav bhaji":      {"calories": 210, "fat": 10.0, "carbs": 26.0, "protein": 5.0},
+        "chole bhature":  {"calories": 427, "fat": 22.0, "carbs": 45.0, "protein": 12.0},
+        "chole":          {"calories": 160, "fat": 5.0,  "carbs": 22.0, "protein": 8.0},
+        "chana masala":   {"calories": 160, "fat": 5.0,  "carbs": 22.0, "protein": 8.0},
+        "rajma":          {"calories": 130, "fat": 3.5,  "carbs": 18.0, "protein": 7.0},
+        "aloo gobi":      {"calories": 120, "fat": 6.0,  "carbs": 14.0, "protein": 3.0},
+        "palak paneer":   {"calories": 170, "fat": 12.0, "carbs": 6.0,  "protein": 10.0},
+        "butter chicken": {"calories": 240, "fat": 15.0, "carbs": 8.0,  "protein": 18.0},
+        "chicken tikka":  {"calories": 165, "fat": 7.0,  "carbs": 3.0,  "protein": 22.0},
+        "tandoori chicken":{"calories": 165, "fat": 7.0,  "carbs": 3.0,  "protein": 22.0},
+        "naan":           {"calories": 262, "fat": 5.0,  "carbs": 45.0, "protein": 9.0},
+        "garlic naan":    {"calories": 290, "fat": 7.0,  "carbs": 46.0, "protein": 9.0},
+        "paratha":        {"calories": 326, "fat": 13.0, "carbs": 45.0, "protein": 7.0},
+        "poori":          {"calories": 350, "fat": 18.0, "carbs": 42.0, "protein": 6.0},
+        "puri":           {"calories": 350, "fat": 18.0, "carbs": 42.0, "protein": 6.0},
+        "upma":           {"calories": 130, "fat": 4.0,  "carbs": 20.0, "protein": 3.5},
+        "poha":           {"calories": 160, "fat": 5.0,  "carbs": 25.0, "protein": 3.0},
+        "khichdi":        {"calories": 120, "fat": 3.0,  "carbs": 18.0, "protein": 5.0},
+        "pulao":          {"calories": 160, "fat": 4.0,  "carbs": 26.0, "protein": 4.0},
+        "korma":          {"calories": 200, "fat": 14.0, "carbs": 8.0,  "protein": 14.0},
+        "dal makhani":    {"calories": 140, "fat": 6.0,  "carbs": 14.0, "protein": 7.0},
+        "masala dosa":    {"calories": 165, "fat": 5.0,  "carbs": 24.0, "protein": 5.0},
+        "uttapam":        {"calories": 110, "fat": 3.0,  "carbs": 16.0, "protein": 4.0},
+        "vada":           {"calories": 240, "fat": 12.0, "carbs": 28.0, "protein": 6.0},
+        "medu vada":      {"calories": 240, "fat": 12.0, "carbs": 28.0, "protein": 6.0},
+        "pani puri":      {"calories": 200, "fat": 8.0,  "carbs": 30.0, "protein": 4.0},
+        "gol gappa":      {"calories": 200, "fat": 8.0,  "carbs": 30.0, "protein": 4.0},
+        "bhel puri":      {"calories": 180, "fat": 7.0,  "carbs": 28.0, "protein": 4.0},
+        "jalebi":         {"calories": 380, "fat": 12.0, "carbs": 65.0, "protein": 3.0},
+        "gulab jamun":    {"calories": 360, "fat": 14.0, "carbs": 54.0, "protein": 5.0},
+        "rasgulla":       {"calories": 186, "fat": 0.5,  "carbs": 40.0, "protein": 5.0},
+        "kheer":          {"calories": 150, "fat": 5.0,  "carbs": 22.0, "protein": 4.0},
+        "halwa":          {"calories": 320, "fat": 15.0, "carbs": 45.0, "protein": 4.0},
+        "ladoo":          {"calories": 400, "fat": 18.0, "carbs": 55.0, "protein": 6.0},
+        "lassi":          {"calories": 75,  "fat": 2.5,  "carbs": 10.0, "protein": 3.0},
+        "mango lassi":    {"calories": 95,  "fat": 2.5,  "carbs": 16.0, "protein": 3.0},
+        "chai":           {"calories": 45,  "fat": 1.5,  "carbs": 6.0,  "protein": 2.0},
+        "masala chai":    {"calories": 45,  "fat": 1.5,  "carbs": 6.0,  "protein": 2.0},
+        # Chinese / Asian
+        "fried rice":     {"calories": 163, "fat": 4.0,  "carbs": 26.0, "protein": 5.0},
+        "manchurian":     {"calories": 180, "fat": 10.0, "carbs": 18.0, "protein": 6.0},
+        "spring roll":    {"calories": 220, "fat": 10.0, "carbs": 28.0, "protein": 5.0},
+        "chow mein":      {"calories": 220, "fat": 8.0,  "carbs": 30.0, "protein": 9.0},
+        "dim sum":        {"calories": 210, "fat": 8.0,  "carbs": 22.0, "protein": 12.0},
+        "wonton":         {"calories": 180, "fat": 5.0,  "carbs": 24.0, "protein": 9.0},
+        "pad thai":       {"calories": 240, "fat": 9.0,  "carbs": 32.0, "protein": 10.0},
+        "tom yum":        {"calories": 60,  "fat": 2.0,  "carbs": 5.0,  "protein": 6.0},
+        # Continental / Western
+        "pasta":          {"calories": 220, "fat": 5.0,  "carbs": 38.0, "protein": 8.0},
+        "spaghetti":      {"calories": 220, "fat": 5.0,  "carbs": 38.0, "protein": 8.0},
+        "mac and cheese": {"calories": 310, "fat": 14.0, "carbs": 35.0, "protein": 12.0},
+        "lasagna":        {"calories": 165, "fat": 7.0,  "carbs": 17.0, "protein": 9.0},
+        "sandwich":       {"calories": 250, "fat": 10.0, "carbs": 30.0, "protein": 12.0},
+        "grilled cheese":  {"calories": 330, "fat": 16.0, "carbs": 30.0, "protein": 14.0},
+        "wrap":           {"calories": 220, "fat": 9.0,  "carbs": 26.0, "protein": 10.0},
+        "burrito":        {"calories": 210, "fat": 8.0,  "carbs": 25.0, "protein": 10.0},
+        "tacos":          {"calories": 226, "fat": 10.0, "carbs": 20.0, "protein": 12.0},
+        "taco":           {"calories": 226, "fat": 10.0, "carbs": 20.0, "protein": 12.0},
+        "quesadilla":     {"calories": 300, "fat": 16.0, "carbs": 24.0, "protein": 14.0},
+        "soup":           {"calories": 60,  "fat": 2.0,  "carbs": 8.0,  "protein": 3.0},
+        "salad":          {"calories": 50,  "fat": 2.0,  "carbs": 6.0,  "protein": 2.0},
+        "caesar salad":   {"calories": 150, "fat": 10.0, "carbs": 8.0,  "protein": 8.0},
+        "steak":          {"calories": 271, "fat": 19.0, "carbs": 0.0,  "protein": 26.0},
+        "fried chicken":  {"calories": 290, "fat": 17.0, "carbs": 12.0, "protein": 22.0},
+        "chicken wings":  {"calories": 290, "fat": 19.0, "carbs": 6.0,  "protein": 24.0},
+        "fish and chips":  {"calories": 250, "fat": 13.0, "carbs": 24.0, "protein": 12.0},
+        "nuggets":        {"calories": 296, "fat": 18.0, "carbs": 17.0, "protein": 15.0},
+        "chicken nuggets": {"calories": 296, "fat": 18.0, "carbs": 17.0, "protein": 15.0},
+        # Snacks & Beverages
+        "popcorn":        {"calories": 375, "fat": 4.5,  "carbs": 74.0, "protein": 11.0},
+        "chips":          {"calories": 536, "fat": 35.0, "carbs": 51.0, "protein": 6.0},
+        "nachos":         {"calories": 346, "fat": 19.0, "carbs": 36.0, "protein": 9.0},
+        "ice cream":      {"calories": 207, "fat": 11.0, "carbs": 24.0, "protein": 3.5},
+        "cake":           {"calories": 350, "fat": 15.0, "carbs": 50.0, "protein": 5.0},
+        "chocolate cake":  {"calories": 370, "fat": 16.0, "carbs": 52.0, "protein": 5.0},
+        "brownie":        {"calories": 405, "fat": 18.0, "carbs": 55.0, "protein": 5.0},
+        "cookie":         {"calories": 440, "fat": 20.0, "carbs": 60.0, "protein": 5.0},
+        "smoothie":       {"calories": 60,  "fat": 0.5,  "carbs": 13.0, "protein": 1.0},
+        "milkshake":      {"calories": 112, "fat": 3.5,  "carbs": 18.0, "protein": 3.0},
+        "coffee":         {"calories": 2,   "fat": 0.0,  "carbs": 0.3,  "protein": 0.3},
+        "latte":          {"calories": 60,  "fat": 2.5,  "carbs": 6.0,  "protein": 4.0},
+        "cappuccino":     {"calories": 50,  "fat": 2.0,  "carbs": 5.0,  "protein": 3.5},
+        # Fruits
+        "apple":          {"calories": 52,  "fat": 0.2,  "carbs": 14.0, "protein": 0.3},
+        "banana":         {"calories": 89,  "fat": 0.3,  "carbs": 23.0, "protein": 1.1},
+        "mango":          {"calories": 60,  "fat": 0.4,  "carbs": 15.0, "protein": 0.8},
+        "watermelon":     {"calories": 30,  "fat": 0.2,  "carbs": 8.0,  "protein": 0.6},
+        "orange":         {"calories": 47,  "fat": 0.1,  "carbs": 12.0, "protein": 0.9},
+        "grapes":         {"calories": 69,  "fat": 0.2,  "carbs": 18.0, "protein": 0.7},
+        "pineapple":      {"calories": 50,  "fat": 0.1,  "carbs": 13.0, "protein": 0.5},
+        "strawberry":     {"calories": 32,  "fat": 0.3,  "carbs": 8.0,  "protein": 0.7},
     }
     db.update(manual)   # manual entries win on overlap
     return db
@@ -425,27 +524,57 @@ async def predict_nutrition(
         elif USE_YOLO and yolo_model is not None:
             try:
                 print("[YOLO] Scanning for multiple foods...")
-                # We must save the bytes to a temp file for Ultralytics 
-                # (YOLO prefers file paths or PIL Images)
                 img_clf = Image.open(io.BytesIO(image_bytes)).convert("RGB")
                 
-                # Run YOLO prediction with higher confidence threshold and NMS (Non-Maximum Suppression)
-                # conf=0.50 means the AI must be 50% sure it's correct (reduces false positives)
-                # iou=0.45 prevents overlapping bounding boxes for the same food item
-                results = yolo_model(img_clf, conf=0.30, iou=0.45, verbose=False)
+                # Resize very large images to 640px (YOLO's native resolution)
+                # This improves detection accuracy and reduces processing time
+                max_dim = max(img_clf.size)
+                if max_dim > 1280:
+                    scale = 1280 / max_dim
+                    new_size = (int(img_clf.size[0] * scale), int(img_clf.size[1] * scale))
+                    img_clf = img_clf.resize(new_size, Image.LANCZOS)
+                    print(f"[YOLO] Resized image to {new_size} for optimal detection")
                 
-                # Loop through all bounding boxes found
-                for box in results[0].boxes:
-                    cls_name = yolo_model.names[int(box.cls)].replace("_", " ")
-                    detected_foods.append(cls_name)
+                # === Tiered Confidence Strategy ===
+                # Tier 1: High confidence (conf=0.30) — reliable detections
+                # Tier 2: Lower confidence (conf=0.15) — catches harder cases
+                # Tier 3: Very low confidence (conf=0.10) with flipped image — last resort
+                
+                confidence_tiers = [
+                    (0.30, img_clf, "Tier 1 (conf=0.30)"),
+                    (0.15, img_clf, "Tier 2 (conf=0.15)"),
+                ]
+                
+                for conf_threshold, img_input, tier_label in confidence_tiers:
+                    results = yolo_model(img_input, conf=conf_threshold, iou=0.45, verbose=False)
+                    
+                    for box in results[0].boxes:
+                        cls_name = yolo_model.names[int(box.cls)].replace("_", " ")
+                        conf_val = float(box.conf)
+                        detected_foods.append(cls_name)
+                        print(f"[YOLO] {tier_label}: {cls_name} (conf={conf_val:.3f})")
+                    
+                    if detected_foods:
+                        break  # Stop trying lower tiers if we found something
+                
+                # Tier 3: Try with horizontally flipped image (different perspective)
+                if not detected_foods:
+                    from PIL import ImageOps
+                    img_flipped = ImageOps.mirror(img_clf)
+                    results_flip = yolo_model(img_flipped, conf=0.10, iou=0.45, verbose=False)
+                    for box in results_flip[0].boxes:
+                        cls_name = yolo_model.names[int(box.cls)].replace("_", " ")
+                        conf_val = float(box.conf)
+                        detected_foods.append(cls_name)
+                        print(f"[YOLO] Tier 3 (flipped, conf=0.10): {cls_name} (conf={conf_val:.3f})")
                 
                 # Remove duplicate detections (same food detected multiple times)
                 detected_foods = list(set(detected_foods))
                 
                 if detected_foods:
-                    print(f"[YOLO] Found foods: {detected_foods}")
+                    print(f"[YOLO] Final detected foods: {detected_foods}")
                 else:
-                    print("[YOLO] No confident food objects detected.")
+                    print("[YOLO] No food objects detected after all tiers.")
             except Exception as e:
                 print(f"[YOLO] Error running object detection: {e}")
 
@@ -529,6 +658,9 @@ async def predict_nutrition(
                 "protein_grams": round(total_macros["protein_grams"], 1)
             }
         }
+    except HTTPException:
+        # Re-raise HTTP exceptions (e.g. 400 no-food-detected) without converting to 500
+        raise
     except Exception as e:
         log_security_event("PREDICT_ERROR", f"Processing failed: {str(e)}", ip=ip, severity="ERROR")
         raise HTTPException(status_code=500, detail=f"Processing Error: {str(e)}")

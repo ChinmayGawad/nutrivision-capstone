@@ -451,6 +451,17 @@
                     </button>
                 </div>
 
+                <!-- Manual Food Name Override -->
+                <div id="manual-name-section" class="hidden">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <i class="fa-solid fa-pen text-slate-500 text-xs"></i>
+                        <label for="food-name-input" class="text-xs text-slate-400 font-medium">Optional: Tell AI what food this is</label>
+                    </div>
+                    <input type="text" id="food-name-input" placeholder="e.g. pizza, biryani, ramen, burger..."
+                        class="dark-input w-full rounded-xl px-4 py-2.5 text-sm">
+                    <p class="text-xs text-slate-600 mt-1"><i class="fa-solid fa-circle-info mr-1"></i>If AI can't detect the food, type its name here and re-analyze.</p>
+                </div>
+
                 <!-- Analyze Button -->
                 <button id="analyze-btn" class="btn-glow w-full py-3.5 rounded-xl font-bold text-white text-base hidden"
                     disabled>
@@ -675,6 +686,9 @@
         let selectedFile = null;
         let chartInstance = null;
 
+        // Save original results HTML so we can restore it after showError() wipes it
+        const resultsOriginalHTML = resultsContainer.innerHTML;
+
         // === Drag & Drop ===
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
             dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); })
@@ -712,6 +726,7 @@
                 imagePreview.src = reader.result;
                 dropZone.classList.add('hidden');
                 previewContainer.classList.remove('hidden');
+                document.getElementById('manual-name-section').classList.remove('hidden');
                 analyzeBtn.classList.remove('hidden');
                 analyzeBtn.removeAttribute('disabled');
             };
@@ -721,6 +736,8 @@
             selectedFile = null;
             fileInput.value = '';
             previewContainer.classList.add('hidden');
+            document.getElementById('manual-name-section').classList.add('hidden');
+            document.getElementById('food-name-input').value = '';
             dropZone.classList.remove('hidden');
             analyzeBtn.classList.add('hidden');
             analyzeBtn.setAttribute('disabled', true);
@@ -735,6 +752,12 @@
             const formData = new FormData();
             formData.append('file', selectedFile);
 
+            // Include manual food name if provided (AI override)
+            const foodNameInput = document.getElementById('food-name-input');
+            if (foodNameInput && foodNameInput.value.trim()) {
+                formData.append('food_name', foodNameInput.value.trim());
+            }
+
             try {
                 const startTime = Date.now();
                 const response = await fetch(`${API_BASE}/predict`, {
@@ -742,7 +765,11 @@
                     body: formData
                 });
 
-                if (response.status === 429) throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
+                if (response.status === 429) {
+                    showRateLimitError();
+                    showToast('Rate limit exceeded. Please wait before trying again.', 'warning');
+                    return;
+                }
                 if (!response.ok) {
                     const err = await response.json();
                     throw new Error(err.detail || 'Server error occurred');
@@ -775,21 +802,21 @@
         function showError(message) {
             loadingState.classList.add('hidden');
             emptyState.classList.add('hidden');
-            resultsContainer.classList.remove('hidden');
 
-            // Hide the normal results content and show an error card instead
-            const banner = document.getElementById('detected-food-banner');
-            banner.classList.remove('hidden');
-            banner.classList.add('flex');
-            document.getElementById('detected-food-name').textContent = 'Detection Failed';
-
+            // Replace the results panel content with an error card directly.
+            // Do NOT query child elements first — they may have been wiped by a
+            // previous call to this function (innerHTML reset destroys them).
             resultsContainer.innerHTML = `
-                <div style="padding: 2rem; text-align: center;">
+                <div style="padding: 2rem; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px;">
                     <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
                         <i class="fa-solid fa-circle-exclamation" style="color: #ef4444; font-size: 1.5rem;"></i>
                     </div>
                     <h3 style="color: #f87171; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">Food Not Recognized</h3>
-                    <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.5; max-width: 320px; margin: 0 auto 1.5rem;">${message}</p>
+                    <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.5; max-width: 320px; margin: 0 auto 1rem;">${message}</p>
+                    <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 14px; padding: 1rem; margin-bottom: 1rem; max-width: 340px;">
+                        <p style="color: #93c5fd; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem;"><i class="fa-solid fa-keyboard" style="margin-right: 4px;"></i> Manual Override</p>
+                        <p style="color: #64748b; font-size: 0.75rem; margin-bottom: 0.5rem;">Type the food name in the input field on the left, then click Analyze again.</p>
+                    </div>
                     <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: center;">
                         <span style="color: #64748b; font-size: 0.75rem;"><i class="fa-solid fa-lightbulb" style="color: #fbbf24; margin-right: 4px;"></i> Tips for better results:</span>
                         <span style="color: #64748b; font-size: 0.75rem;">• Use a well-lit, close-up photo of the food</span>
@@ -798,11 +825,57 @@
                     </div>
                 </div>
             `;
+            resultsContainer.classList.remove('hidden');
+        }
+
+        function showRateLimitError() {
+            loadingState.classList.add('hidden');
+            emptyState.classList.add('hidden');
+
+            let countdown = 60;
+            resultsContainer.innerHTML = `
+                <div style="padding: 2rem; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px;">
+                    <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(251, 191, 36, 0.1); border: 2px solid rgba(251, 191, 36, 0.35); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; animation: pulse 2s ease-in-out infinite;">
+                        <i class="fa-solid fa-shield-halved" style="color: #fbbf24; font-size: 1.6rem;"></i>
+                    </div>
+                    <h3 style="color: #fbbf24; font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -0.01em;">Rate Limit Reached</h3>
+                    <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.6; max-width: 340px; margin: 0 auto 1.25rem;">You've made too many requests in a short time. This limit protects our servers and ensures fair usage for everyone.</p>
+                    <div style="background: rgba(251, 191, 36, 0.06); border: 1px solid rgba(251, 191, 36, 0.2); border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; max-width: 300px; width: 100%;">
+                        <p style="color: #fde68a; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem;"><i class="fa-solid fa-clock" style="margin-right: 5px;"></i> Cooldown Timer</p>
+                        <p id="rate-limit-countdown" style="color: #fbbf24; font-size: 2.5rem; font-weight: 900; line-height: 1; margin-bottom: 0.25rem;">${countdown}s</p>
+                        <p style="color: #64748b; font-size: 0.7rem;">You can try again when the timer reaches 0</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 0.6rem 1rem;">
+                        <i class="fa-solid fa-circle-info" style="color: #475569; font-size: 0.75rem;"></i>
+                        <span style="color: #64748b; font-size: 0.75rem;">Limit: 5 uploads per minute</span>
+                    </div>
+                </div>
+            `;
+            resultsContainer.classList.remove('hidden');
+
+            // Live countdown timer
+            const countdownEl = document.getElementById('rate-limit-countdown');
+            const timer = setInterval(() => {
+                countdown--;
+                if (countdownEl) countdownEl.textContent = countdown + 's';
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    if (countdownEl) {
+                        countdownEl.textContent = '✓';
+                        countdownEl.style.color = '#34d399';
+                    }
+                    showToast('You can upload again now!', 'success');
+                }
+            }, 1000);
         }
 
         function showResults(data) {
             loadingState.classList.add('hidden');
             emptyState.classList.add('hidden');
+
+            // Restore original results HTML if it was replaced by showError()
+            // This re-creates all child elements (#cal-result, #prot-result, etc.)
+            resultsContainer.innerHTML = resultsOriginalHTML;
 
             const macros = data.nutrition_estimates;
             const dataSource = data.data_source_used;
