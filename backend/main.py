@@ -100,31 +100,37 @@ app.add_middleware(
 )
 
 
-# --- [YOLOv8 Custom Food Detection Model (256 Classes)] ---
-# Trained on UECFOOD256 dataset: rice, pizza, sushi, ramen, steak, curry, etc.
-# Falls back to generic yolov8n.pt if custom weights are not found.
+# --- [YOLOv8 Custom Food Detection Models] ---
+# We load BOTH the baseline model (256 classes) and the Indian Food model
+# so it can recognize foods from both datasets simultaneously.
 
-CUSTOM_YOLO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "runs", "detect", "food_detector5", "weights", "best.pt")
+BASE_YOLO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "runs", "detect", "food_detector5", "weights", "best.pt")
+INDIAN_YOLO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "runs", "detect", "indian_food_v2", "weights", "best.pt")
 FALLBACK_YOLO = "yolov8n.pt"
 
+yolo_models = []
 try:
     from ultralytics import YOLO
-    if os.path.exists(CUSTOM_YOLO_PATH):
-        print(f"[YOLO] Loading CUSTOM trained food model (256 classes)...")
-        yolo_model = YOLO(CUSTOM_YOLO_PATH)
-        print("[YOLO] Custom food model loaded successfully!")
-    else:
-        print(f"[YOLO] Custom model not found. Loading generic {FALLBACK_YOLO}...")
-        yolo_model = YOLO(FALLBACK_YOLO)
+    
+    if os.path.exists(BASE_YOLO_PATH):
+        print("[YOLO] Loading BASE trained food model (256 classes)...")
+        yolo_models.append(YOLO(BASE_YOLO_PATH))
+        
+    if os.path.exists(INDIAN_YOLO_PATH):
+        print("[YOLO] Loading INDIAN trained food model...")
+        yolo_models.append(YOLO(INDIAN_YOLO_PATH))
+
+    if not yolo_models:
+        print(f"[YOLO] Custom models not found. Loading generic {FALLBACK_YOLO}...")
+        yolo_models.append(YOLO(FALLBACK_YOLO))
         print("[YOLO] Generic model loaded.")
+        
     USE_YOLO = True
 except ImportError:
     print("[YOLO] ultralytics not installed. Multi-food detection disabled.")
-    yolo_model = None
     USE_YOLO = False
 except Exception as e:
-    print(f"[YOLO] Error loading YOLO model: {e}")
-    yolo_model = None
+    print(f"[YOLO] Error loading YOLO models: {e}")
     USE_YOLO = False
 
 
@@ -159,150 +165,9 @@ def _load_nutrition_db():
     else:
         print(f"[NutritionDB] ingredients_metadata.csv not found — using manual DB only")
 
-    # Manual overrides / items not in Nutrition5k (egg varieties, Indian foods, etc.)
-    manual = {
-        "egg":            {"calories": 155, "fat": 11.0, "carbs": 1.1,  "protein": 13.0},
-        "boiled egg":     {"calories": 155, "fat": 11.0, "carbs": 1.1,  "protein": 13.0},
-        "fried egg":      {"calories": 196, "fat": 15.0, "carbs": 0.8,  "protein": 14.0},
-        "omelette":       {"calories": 154, "fat": 11.0, "carbs": 0.9,  "protein": 11.0},
-        "omelet":         {"calories": 154, "fat": 11.0, "carbs": 0.9,  "protein": 11.0},
-        "egg omelette":   {"calories": 154, "fat": 11.0, "carbs": 0.9,  "protein": 11.0},
-        "egg omelet":     {"calories": 154, "fat": 11.0, "carbs": 0.9,  "protein": 11.0},
-        "poached egg":    {"calories": 143, "fat": 9.5,  "carbs": 0.7,  "protein": 13.0},
-        "pizza":          {"calories": 266, "fat": 10.0, "carbs": 33.0, "protein": 11.0},
-        "burger":         {"calories": 295, "fat": 14.0, "carbs": 24.0, "protein": 17.0},
-        "roti":           {"calories": 297, "fat": 3.7,  "carbs": 60.0, "protein": 9.0},
-        "chapati":        {"calories": 297, "fat": 3.7,  "carbs": 60.0, "protein": 9.0},
-        "dal":            {"calories": 116, "fat": 0.4,  "carbs": 20.0, "protein": 8.0},
-        "idli":           {"calories": 58,  "fat": 0.4,  "carbs": 11.0, "protein": 2.0},
-        "dosa":           {"calories": 133, "fat": 2.7,  "carbs": 22.0, "protein": 4.0},
-        "biryani":        {"calories": 163, "fat": 5.0,  "carbs": 22.0, "protein": 8.0},
-        "paneer":         {"calories": 265, "fat": 20.0, "carbs": 3.6,  "protein": 18.0},
-        "french fries":   {"calories": 312, "fat": 15.0, "carbs": 41.0, "protein": 3.4},
-        "donut":          {"calories": 452, "fat": 25.0, "carbs": 51.0, "protein": 5.0},
-        "pancake":        {"calories": 227, "fat": 8.0,  "carbs": 36.0, "protein": 6.0},
-        "hot dog":        {"calories": 290, "fat": 17.0, "carbs": 22.0, "protein": 11.0},
-        # Japanese Foods from UECFOOD256 for Demo
-        "okinawa soba":   {"calories": 420, "fat": 12.0, "carbs": 60.0, "protein": 18.0},
-        "goya chanpuru":  {"calories": 240, "fat": 15.0, "carbs": 12.0, "protein": 14.0},
-        "sushi":          {"calories": 350, "fat": 2.0,  "carbs": 75.0, "protein": 11.0},
-        "ramen":          {"calories": 436, "fat": 16.0, "carbs": 55.0, "protein": 15.0},
-        "takoyaki":       {"calories": 310, "fat": 14.0, "carbs": 38.0, "protein": 9.0},
-        "okonomiyaki":    {"calories": 520, "fat": 22.0, "carbs": 65.0, "protein": 17.0},
-        "udon":           {"calories": 280, "fat": 2.0,  "carbs": 55.0, "protein": 10.0},
-        "curry":          {"calories": 480, "fat": 20.0, "carbs": 60.0, "protein": 12.0},
-        "tempura":        {"calories": 320, "fat": 20.0, "carbs": 30.0, "protein": 6.0},
-        "yakitori":       {"calories": 150, "fat": 6.0,  "carbs": 2.0,  "protein": 22.0},
-        "tonkatsu":       {"calories": 550, "fat": 35.0, "carbs": 30.0, "protein": 25.0},
-        "miso soup":      {"calories": 40,  "fat": 1.5,  "carbs": 4.0,  "protein": 3.0},
-        "gyudon":         {"calories": 650, "fat": 25.0, "carbs": 85.0, "protein": 22.0},
-        "karaage":        {"calories": 290, "fat": 18.0, "carbs": 12.0, "protein": 16.0},
-        "sashimi":       {"calories": 127, "fat": 4.0,  "carbs": 0.0,  "protein": 22.0},
-        "salmon sashimi": {"calories": 180, "fat": 10.0, "carbs": 0.0,  "protein": 20.0},
-        "tuna sashimi":   {"calories": 110, "fat": 0.5,  "carbs": 0.0,  "protein": 24.0},
-        "udon noodles":   {"calories": 280, "fat": 2.0,  "carbs": 55.0, "protein": 10.0},
-        "soba":           {"calories": 300, "fat": 2.0,  "carbs": 60.0, "protein": 12.0},
-        "yakisoba":       {"calories": 450, "fat": 15.0, "carbs": 65.0, "protein": 12.0},
-        "gyoza":          {"calories": 250, "fat": 12.0, "carbs": 25.0, "protein": 10.0},
-        # Indian / South Asian Foods
-        "momos":          {"calories": 200, "fat": 8.0,  "carbs": 25.0, "protein": 10.0},
-        "momo":           {"calories": 200, "fat": 8.0,  "carbs": 25.0, "protein": 10.0},
-        "steamed momos":  {"calories": 180, "fat": 6.0,  "carbs": 25.0, "protein": 10.0},
-        "fried momos":    {"calories": 260, "fat": 14.0, "carbs": 28.0, "protein": 9.0},
-        "samosa":         {"calories": 262, "fat": 14.0, "carbs": 28.0, "protein": 5.0},
-        "vada pav":       {"calories": 290, "fat": 15.0, "carbs": 35.0, "protein": 5.0},
-        "pav bhaji":      {"calories": 210, "fat": 10.0, "carbs": 26.0, "protein": 5.0},
-        "chole bhature":  {"calories": 427, "fat": 22.0, "carbs": 45.0, "protein": 12.0},
-        "chole":          {"calories": 160, "fat": 5.0,  "carbs": 22.0, "protein": 8.0},
-        "chana masala":   {"calories": 160, "fat": 5.0,  "carbs": 22.0, "protein": 8.0},
-        "rajma":          {"calories": 130, "fat": 3.5,  "carbs": 18.0, "protein": 7.0},
-        "aloo gobi":      {"calories": 120, "fat": 6.0,  "carbs": 14.0, "protein": 3.0},
-        "palak paneer":   {"calories": 170, "fat": 12.0, "carbs": 6.0,  "protein": 10.0},
-        "butter chicken": {"calories": 240, "fat": 15.0, "carbs": 8.0,  "protein": 18.0},
-        "chicken tikka":  {"calories": 165, "fat": 7.0,  "carbs": 3.0,  "protein": 22.0},
-        "tandoori chicken":{"calories": 165, "fat": 7.0,  "carbs": 3.0,  "protein": 22.0},
-        "naan":           {"calories": 262, "fat": 5.0,  "carbs": 45.0, "protein": 9.0},
-        "garlic naan":    {"calories": 290, "fat": 7.0,  "carbs": 46.0, "protein": 9.0},
-        "paratha":        {"calories": 326, "fat": 13.0, "carbs": 45.0, "protein": 7.0},
-        "poori":          {"calories": 350, "fat": 18.0, "carbs": 42.0, "protein": 6.0},
-        "puri":           {"calories": 350, "fat": 18.0, "carbs": 42.0, "protein": 6.0},
-        "upma":           {"calories": 130, "fat": 4.0,  "carbs": 20.0, "protein": 3.5},
-        "poha":           {"calories": 160, "fat": 5.0,  "carbs": 25.0, "protein": 3.0},
-        "khichdi":        {"calories": 120, "fat": 3.0,  "carbs": 18.0, "protein": 5.0},
-        "pulao":          {"calories": 160, "fat": 4.0,  "carbs": 26.0, "protein": 4.0},
-        "korma":          {"calories": 200, "fat": 14.0, "carbs": 8.0,  "protein": 14.0},
-        "dal makhani":    {"calories": 140, "fat": 6.0,  "carbs": 14.0, "protein": 7.0},
-        "masala dosa":    {"calories": 165, "fat": 5.0,  "carbs": 24.0, "protein": 5.0},
-        "uttapam":        {"calories": 110, "fat": 3.0,  "carbs": 16.0, "protein": 4.0},
-        "vada":           {"calories": 240, "fat": 12.0, "carbs": 28.0, "protein": 6.0},
-        "medu vada":      {"calories": 240, "fat": 12.0, "carbs": 28.0, "protein": 6.0},
-        "pani puri":      {"calories": 200, "fat": 8.0,  "carbs": 30.0, "protein": 4.0},
-        "gol gappa":      {"calories": 200, "fat": 8.0,  "carbs": 30.0, "protein": 4.0},
-        "bhel puri":      {"calories": 180, "fat": 7.0,  "carbs": 28.0, "protein": 4.0},
-        "jalebi":         {"calories": 380, "fat": 12.0, "carbs": 65.0, "protein": 3.0},
-        "gulab jamun":    {"calories": 360, "fat": 14.0, "carbs": 54.0, "protein": 5.0},
-        "rasgulla":       {"calories": 186, "fat": 0.5,  "carbs": 40.0, "protein": 5.0},
-        "kheer":          {"calories": 150, "fat": 5.0,  "carbs": 22.0, "protein": 4.0},
-        "halwa":          {"calories": 320, "fat": 15.0, "carbs": 45.0, "protein": 4.0},
-        "ladoo":          {"calories": 400, "fat": 18.0, "carbs": 55.0, "protein": 6.0},
-        "lassi":          {"calories": 75,  "fat": 2.5,  "carbs": 10.0, "protein": 3.0},
-        "mango lassi":    {"calories": 95,  "fat": 2.5,  "carbs": 16.0, "protein": 3.0},
-        "chai":           {"calories": 45,  "fat": 1.5,  "carbs": 6.0,  "protein": 2.0},
-        "masala chai":    {"calories": 45,  "fat": 1.5,  "carbs": 6.0,  "protein": 2.0},
-        # Chinese / Asian
-        "fried rice":     {"calories": 163, "fat": 4.0,  "carbs": 26.0, "protein": 5.0},
-        "manchurian":     {"calories": 180, "fat": 10.0, "carbs": 18.0, "protein": 6.0},
-        "spring roll":    {"calories": 220, "fat": 10.0, "carbs": 28.0, "protein": 5.0},
-        "chow mein":      {"calories": 220, "fat": 8.0,  "carbs": 30.0, "protein": 9.0},
-        "dim sum":        {"calories": 210, "fat": 8.0,  "carbs": 22.0, "protein": 12.0},
-        "wonton":         {"calories": 180, "fat": 5.0,  "carbs": 24.0, "protein": 9.0},
-        "pad thai":       {"calories": 240, "fat": 9.0,  "carbs": 32.0, "protein": 10.0},
-        "tom yum":        {"calories": 60,  "fat": 2.0,  "carbs": 5.0,  "protein": 6.0},
-        # Continental / Western
-        "pasta":          {"calories": 220, "fat": 5.0,  "carbs": 38.0, "protein": 8.0},
-        "spaghetti":      {"calories": 220, "fat": 5.0,  "carbs": 38.0, "protein": 8.0},
-        "mac and cheese": {"calories": 310, "fat": 14.0, "carbs": 35.0, "protein": 12.0},
-        "lasagna":        {"calories": 165, "fat": 7.0,  "carbs": 17.0, "protein": 9.0},
-        "sandwich":       {"calories": 250, "fat": 10.0, "carbs": 30.0, "protein": 12.0},
-        "grilled cheese":  {"calories": 330, "fat": 16.0, "carbs": 30.0, "protein": 14.0},
-        "wrap":           {"calories": 220, "fat": 9.0,  "carbs": 26.0, "protein": 10.0},
-        "burrito":        {"calories": 210, "fat": 8.0,  "carbs": 25.0, "protein": 10.0},
-        "tacos":          {"calories": 226, "fat": 10.0, "carbs": 20.0, "protein": 12.0},
-        "taco":           {"calories": 226, "fat": 10.0, "carbs": 20.0, "protein": 12.0},
-        "quesadilla":     {"calories": 300, "fat": 16.0, "carbs": 24.0, "protein": 14.0},
-        "soup":           {"calories": 60,  "fat": 2.0,  "carbs": 8.0,  "protein": 3.0},
-        "salad":          {"calories": 50,  "fat": 2.0,  "carbs": 6.0,  "protein": 2.0},
-        "caesar salad":   {"calories": 150, "fat": 10.0, "carbs": 8.0,  "protein": 8.0},
-        "steak":          {"calories": 271, "fat": 19.0, "carbs": 0.0,  "protein": 26.0},
-        "fried chicken":  {"calories": 290, "fat": 17.0, "carbs": 12.0, "protein": 22.0},
-        "chicken wings":  {"calories": 290, "fat": 19.0, "carbs": 6.0,  "protein": 24.0},
-        "fish and chips":  {"calories": 250, "fat": 13.0, "carbs": 24.0, "protein": 12.0},
-        "nuggets":        {"calories": 296, "fat": 18.0, "carbs": 17.0, "protein": 15.0},
-        "chicken nuggets": {"calories": 296, "fat": 18.0, "carbs": 17.0, "protein": 15.0},
-        # Snacks & Beverages
-        "popcorn":        {"calories": 375, "fat": 4.5,  "carbs": 74.0, "protein": 11.0},
-        "chips":          {"calories": 536, "fat": 35.0, "carbs": 51.0, "protein": 6.0},
-        "nachos":         {"calories": 346, "fat": 19.0, "carbs": 36.0, "protein": 9.0},
-        "ice cream":      {"calories": 207, "fat": 11.0, "carbs": 24.0, "protein": 3.5},
-        "cake":           {"calories": 350, "fat": 15.0, "carbs": 50.0, "protein": 5.0},
-        "chocolate cake":  {"calories": 370, "fat": 16.0, "carbs": 52.0, "protein": 5.0},
-        "brownie":        {"calories": 405, "fat": 18.0, "carbs": 55.0, "protein": 5.0},
-        "cookie":         {"calories": 440, "fat": 20.0, "carbs": 60.0, "protein": 5.0},
-        "smoothie":       {"calories": 60,  "fat": 0.5,  "carbs": 13.0, "protein": 1.0},
-        "milkshake":      {"calories": 112, "fat": 3.5,  "carbs": 18.0, "protein": 3.0},
-        "coffee":         {"calories": 2,   "fat": 0.0,  "carbs": 0.3,  "protein": 0.3},
-        "latte":          {"calories": 60,  "fat": 2.5,  "carbs": 6.0,  "protein": 4.0},
-        "cappuccino":     {"calories": 50,  "fat": 2.0,  "carbs": 5.0,  "protein": 3.5},
-        # Fruits
-        "apple":          {"calories": 52,  "fat": 0.2,  "carbs": 14.0, "protein": 0.3},
-        "banana":         {"calories": 89,  "fat": 0.3,  "carbs": 23.0, "protein": 1.1},
-        "mango":          {"calories": 60,  "fat": 0.4,  "carbs": 15.0, "protein": 0.8},
-        "watermelon":     {"calories": 30,  "fat": 0.2,  "carbs": 8.0,  "protein": 0.6},
-        "orange":         {"calories": 47,  "fat": 0.1,  "carbs": 12.0, "protein": 0.9},
-        "grapes":         {"calories": 69,  "fat": 0.2,  "carbs": 18.0, "protein": 0.7},
-        "pineapple":      {"calories": 50,  "fat": 0.1,  "carbs": 13.0, "protein": 0.5},
-        "strawberry":     {"calories": 32,  "fat": 0.3,  "carbs": 8.0,  "protein": 0.7},
-    }
+    # Manual overrides / items not in Nutrition5k (imported from external file)
+    from backend.nutrition_data import MANUAL_NUTRITION_DB
+    manual = MANUAL_NUTRITION_DB
     db.update(manual)   # manual entries win on overlap
     return db
 
@@ -351,6 +216,7 @@ def lookup_local_nutrition(food_query: str, serving_size_g: float):
             "fat_grams": round(matched["fat"] * scale, 1),
             "carbs_grams": round(matched["carbs"] * scale, 1),
             "protein_grams": round(matched["protein"] * scale, 1),
+            # TODO: Add Micronutrients later (Vitamins A, B1-12, C, D, E, K, Iron, Calcium, Zinc, etc.)
         }
     return None
 
@@ -392,7 +258,8 @@ def fetch_edamam_nutrition(food_query: str, serving_size_g: float = None):
                     "mass_grams": round(data.get("totalWeight", mass), 1),
                     "fat_grams": round(nutrients.get("FAT", {}).get("quantity", 0), 1),
                     "carbs_grams": round(nutrients.get("CHOCDF", {}).get("quantity", 0), 1),
-                    "protein_grams": round(nutrients.get("PROCNT", {}).get("quantity", 0), 1)
+                    "protein_grams": round(nutrients.get("PROCNT", {}).get("quantity", 0), 1),
+                    # TODO: Add Micronutrients later (Vitamins A, B1-12, C, D, E, K, Iron, Calcium, Zinc, etc.)
                 }
             else:
                 print(f"[Edamam] No calorie data returned.")
@@ -521,9 +388,9 @@ async def predict_nutrition(
         if food_name and food_name.strip() != "":
             detected_foods.append(food_name.strip())
             print(f"[YOLO] User override: {food_name}")
-        elif USE_YOLO and yolo_model is not None:
+        elif USE_YOLO and len(yolo_models) > 0:
             try:
-                print("[YOLO] Scanning for multiple foods...")
+                print(f"[YOLO] Scanning using {len(yolo_models)} models...")
                 img_clf = Image.open(io.BytesIO(image_bytes)).convert("RGB")
                 
                 # Resize very large images to 640px (YOLO's native resolution)
@@ -534,47 +401,66 @@ async def predict_nutrition(
                     new_size = (int(img_clf.size[0] * scale), int(img_clf.size[1] * scale))
                     img_clf = img_clf.resize(new_size, Image.LANCZOS)
                     print(f"[YOLO] Resized image to {new_size} for optimal detection")
+
+                all_detections = [] # To track tuples of (class_name, confidence)
                 
-                # === Tiered Confidence Strategy ===
-                # Tier 1: High confidence (conf=0.30) — reliable detections
-                # Tier 2: Lower confidence (conf=0.15) — catches harder cases
-                # Tier 3: Very low confidence (conf=0.10) with flipped image — last resort
-                
-                confidence_tiers = [
-                    (0.30, img_clf, "Tier 1 (conf=0.30)"),
-                    (0.15, img_clf, "Tier 2 (conf=0.15)"),
-                ]
-                
-                for conf_threshold, img_input, tier_label in confidence_tiers:
-                    results = yolo_model(img_input, conf=conf_threshold, iou=0.45, verbose=False)
+                for model in yolo_models:
+                    print(f"[YOLO] Running model with {len(model.names)} classes...")
                     
-                    for box in results[0].boxes:
-                        cls_name = yolo_model.names[int(box.cls)].replace("_", " ")
-                        conf_val = float(box.conf)
-                        detected_foods.append(cls_name)
-                        print(f"[YOLO] {tier_label}: {cls_name} (conf={conf_val:.3f})")
+                    # === Tiered Confidence Strategy ===
+                    # Tier 1: High confidence (conf=0.30) — reliable detections
+                    # Tier 2: Lower confidence (conf=0.15) — catches harder cases
+                    # Tier 3: Very low confidence (conf=0.10) with flipped image — last resort
                     
-                    if detected_foods:
-                        break  # Stop trying lower tiers if we found something
+                    confidence_tiers = [
+                        (0.30, img_clf, "Tier 1 (conf=0.30)"),
+                        (0.15, img_clf, "Tier 2 (conf=0.15)"),
+                    ]
+                    
+                    model_found_food = False
+                    for conf_threshold, img_input, tier_label in confidence_tiers:
+                        results = model(img_input, conf=conf_threshold, iou=0.45, verbose=False)
+                        
+                        for box in results[0].boxes:
+                            cls_name = model.names[int(box.cls)].replace("_", " ")
+                            conf_val = float(box.conf)
+                            
+                            # Calibration heuristic: Smaller models (like the 29-class one) 
+                            # easily get overconfident on unknown shapes. We boost the large 
+                            # base model's score so it doesn't get overridden by false positives.
+                            adjusted_conf = conf_val + 0.30 if len(model.names) > 100 else conf_val
+                            
+                            all_detections.append((cls_name, adjusted_conf, conf_val))
+                            model_found_food = True
+                            print(f"[YOLO] {tier_label}: {cls_name} (conf={conf_val:.3f}, adjusted={adjusted_conf:.3f})")
+                        
+                        if model_found_food:
+                            break  # Stop trying lower tiers for this specific model if found something
+                    
+                    # Tier 3: Try with horizontally flipped image (different perspective)
+                    if not model_found_food:
+                        from PIL import ImageOps
+                        img_flipped = ImageOps.mirror(img_clf)
+                        results_flip = model(img_flipped, conf=0.10, iou=0.45, verbose=False)
+                        for box in results_flip[0].boxes:
+                            cls_name = model.names[int(box.cls)].replace("_", " ")
+                            conf_val = float(box.conf)
+                            
+                            adjusted_conf = conf_val + 0.30 if len(model.names) > 100 else conf_val
+                            
+                            all_detections.append((cls_name, adjusted_conf, conf_val))
+                            print(f"[YOLO] Tier 3 (flipped, conf=0.10): {cls_name} (conf={conf_val:.3f}, adjusted={adjusted_conf:.3f})")
                 
-                # Tier 3: Try with horizontally flipped image (different perspective)
-                if not detected_foods:
-                    from PIL import ImageOps
-                    img_flipped = ImageOps.mirror(img_clf)
-                    results_flip = yolo_model(img_flipped, conf=0.10, iou=0.45, verbose=False)
-                    for box in results_flip[0].boxes:
-                        cls_name = yolo_model.names[int(box.cls)].replace("_", " ")
-                        conf_val = float(box.conf)
-                        detected_foods.append(cls_name)
-                        print(f"[YOLO] Tier 3 (flipped, conf=0.10): {cls_name} (conf={conf_val:.3f})")
-                
-                # Remove duplicate detections (same food detected multiple times)
-                detected_foods = list(set(detected_foods))
-                
-                if detected_foods:
-                    print(f"[YOLO] Final detected foods: {detected_foods}")
+                if all_detections:
+                    # Sort all detections by the ADJUSTED confidence score descending
+                    all_detections.sort(key=lambda x: x[1], reverse=True)
+                    # Pick only the highest confidence detection
+                    best_food = all_detections[0][0]
+                    detected_foods = [best_food]
+                    print(f"[YOLO] Top confidence detection selected: {detected_foods} (raw_conf={all_detections[0][2]:.3f})")
                 else:
-                    print("[YOLO] No food objects detected after all tiers.")
+                    detected_foods = []
+                    print("[YOLO] No food objects detected after all models and tiers.")
             except Exception as e:
                 print(f"[YOLO] Error running object detection: {e}")
 
@@ -711,7 +597,7 @@ def system_health(request: Request, user: dict = Depends(verify_token)):
     return {
         "status": "healthy",
         "yolo_model_loaded": USE_YOLO,
-        "yolo_model_path": CUSTOM_YOLO_PATH if USE_YOLO and os.path.exists(CUSTOM_YOLO_PATH) else FALLBACK_YOLO,
+        "yolo_models_count": len(yolo_models) if USE_YOLO else 0,
         "nutrition_db_entries": len(NUTRITION_DB),
         "log_directory": LOG_DIR,
         "timestamp": datetime.utcnow().isoformat() + "Z"
@@ -725,108 +611,16 @@ def system_health(request: Request, user: dict = Depends(verify_token)):
 # the EU's GDPR. Documents the data minimization strategy employed
 # by NutriVision AI (images processed in-memory, never stored).
 
-PRIVACY_POLICY_HTML = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriVision AI — Privacy Policy & Compliance</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0f1a; color: #c8d6e5; line-height: 1.7; padding: 2rem; }
-        .container { max-width: 800px; margin: 0 auto; }
-        h1 { color: #10b981; font-size: 2rem; margin-bottom: 0.5rem; }
-        h2 { color: #34d399; font-size: 1.3rem; margin-top: 2rem; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(16,185,129,0.2); padding-bottom: 0.3rem; }
-        h3 { color: #a78bfa; font-size: 1.1rem; margin-top: 1.5rem; }
-        p, li { font-size: 0.95rem; margin-bottom: 0.7rem; }
-        ul { padding-left: 1.5rem; }
-        .badge { display: inline-block; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #34d399; padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem; }
-        .highlight { background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2); border-radius: 10px; padding: 1rem; margin: 1rem 0; }
-        .footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.06); color: #475569; font-size: 0.8rem; }
-        a { color: #60a5fa; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <span class="badge">Legal Compliance Document</span>
-        <h1>🔒 Privacy Policy & Data Protection</h1>
-        <p>NutriVision AI — Food Nutrition Estimator</p>
-        <p><em>Last updated: March 2026</em></p>
-
-        <h2>1. Overview</h2>
-        <p>NutriVision AI is committed to protecting user privacy in compliance with applicable data protection laws including India's <strong>Digital Personal Data Protection (DPDP) Act, 2023</strong> and the EU's <strong>General Data Protection Regulation (GDPR)</strong>.</p>
-
-        <h2>2. Data We Process</h2>
-        <ul>
-            <li><strong>Food Images:</strong> Uploaded images are processed entirely <strong>in-memory</strong> for AI-based food recognition. Images are <strong>never written to disk, stored in a database, or transmitted to third parties</strong>.</li>
-            <li><strong>Nutrition Queries:</strong> When our local database cannot identify a food item, the food name (text only — not the image) may be sent to the Edamam Nutrition API for lookup.</li>
-            <li><strong>IP Addresses:</strong> Logged temporarily for rate limiting and security audit purposes as permitted under legitimate interest.</li>
-        </ul>
-
-        <h2>3. Data Minimization (DPDP Act Section 4 & GDPR Article 5)</h2>
-        <div class="highlight">
-            <p>We implement <strong>data minimization by design</strong>: only the minimum personal data required for the service (food image for recognition) is processed. Images exist only in server RAM during processing and are immediately discarded. No persistent storage of personal data occurs.</p>
-        </div>
-
-        <h2>4. Legal Basis for Processing</h2>
-        <ul>
-            <li><strong>Consent (DPDP Act Section 6):</strong> By uploading an image, the user consents to its processing for nutrition estimation.</li>
-            <li><strong>Legitimate Interest (GDPR Article 6(1)(f)):</strong> Security logging (IP addresses, failed authentication attempts) is maintained for system security and fraud prevention.</li>
-        </ul>
-
-        <h2>5. User Rights</h2>
-        <h3>Under DPDP Act 2023:</h3>
-        <ul>
-            <li>Right to access information about personal data processing (Section 11)</li>
-            <li>Right to correction and erasure of personal data (Section 12)</li>
-            <li>Right to grievance redressal (Section 13)</li>
-            <li>Right to nominate (Section 14)</li>
-        </ul>
-        <h3>Under GDPR:</h3>
-        <ul>
-            <li>Right to Access (Article 15), Rectification (Article 16), Erasure (Article 17)</li>
-            <li>Right to Restriction of Processing (Article 18)</li>
-            <li>Right to Data Portability (Article 20)</li>
-        </ul>
-
-        <h2>6. Security Measures</h2>
-        <ul>
-            <li>JWT-based authentication with HS256 signing and automatic token expiry</li>
-            <li>Role-Based Access Control (RBAC) for administrative endpoints</li>
-            <li>Rate limiting (DDoS protection) via sliding-window algorithms</li>
-            <li>Input validation: MIME type checking, file size limits (5MB)</li>
-            <li>HTTP security headers: HSTS, CSP, X-Frame-Options, X-Content-Type-Options</li>
-            <li>CORS policy restricting API access to authorized frontends</li>
-            <li>Environment variable isolation for secrets (never committed to source code)</li>
-            <li>Centralized audit logging for forensic investigation</li>
-        </ul>
-
-        <h2>7. Third-Party Services</h2>
-        <ul>
-            <li><strong>Edamam API:</strong> Used as a fallback nutrition data source. Only food name text is sent (not images). See: <a href="https://developer.edamam.com/edamam-nutrition-api" target="_blank">Edamam Privacy Policy</a></li>
-        </ul>
-
-        <h2>8. Data Retention</h2>
-        <p>Uploaded images: <strong>0 seconds</strong> (processed in-memory, immediately discarded).<br>
-        Security audit logs: Retained for <strong>90 days</strong> for incident response purposes, then purged.<br>
-        JWT tokens: Auto-expire after <strong>1 hour</strong> and are not stored server-side (stateless).</p>
-
-        <h2>9. Contact</h2>
-        <p>For privacy-related inquiries, data access requests, or to exercise your rights under DPDP Act 2023 or GDPR, contact us at: <strong>privacy@nutrivision-ai.example</strong></p>
-
-        <div class="footer">
-            <p>&copy; 2026 NutriVision AI. All rights reserved. This document is governed by applicable data protection regulations including the DPDP Act 2023 and GDPR. For questions, contact our Data Protection Officer at the email listed above.</p>
-        </div>
-    </div>
-</body>
-</html>
-"""
-
 @app.get("/privacy", response_class=HTMLResponse)
 def privacy_policy():
     """Serves the Privacy Policy & DPDP Act / GDPR compliance page."""
-    return HTMLResponse(content=PRIVACY_POLICY_HTML)
+    html_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "privacy_policy.html"))
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except FileNotFoundError:
+        content = "<h1>Privacy Policy</h1><p>Document not found.</p>"
+    return HTMLResponse(content=content)
 
 
 if __name__ == "__main__":
