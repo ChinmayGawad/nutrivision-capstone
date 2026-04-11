@@ -216,7 +216,13 @@ def lookup_local_nutrition(food_query: str, serving_size_g: float):
             "fat_grams": round(matched["fat"] * scale, 1),
             "carbs_grams": round(matched["carbs"] * scale, 1),
             "protein_grams": round(matched["protein"] * scale, 1),
-            # TODO: Add Micronutrients later (Vitamins A, B1-12, C, D, E, K, Iron, Calcium, Zinc, etc.)
+            # TEST ONLY: Dummy Micronutrients
+            "micronutrients": {
+                "vitamin_a_iu": round(150.0 * scale, 1),
+                "vitamin_c_mg": round(12.5 * scale, 1),
+                "iron_mg": round(2.1 * scale, 1),
+                "calcium_mg": round(45.0 * scale, 1)
+            }
         }
     return None
 
@@ -259,7 +265,13 @@ def fetch_edamam_nutrition(food_query: str, serving_size_g: float = None):
                     "fat_grams": round(nutrients.get("FAT", {}).get("quantity", 0), 1),
                     "carbs_grams": round(nutrients.get("CHOCDF", {}).get("quantity", 0), 1),
                     "protein_grams": round(nutrients.get("PROCNT", {}).get("quantity", 0), 1),
-                    # TODO: Add Micronutrients later (Vitamins A, B1-12, C, D, E, K, Iron, Calcium, Zinc, etc.)
+                    # TEST ONLY: Fallback API Micronutrients
+                    "micronutrients": {
+                        "vitamin_a_iu": round(nutrients.get("VITA_IU", {}).get("quantity", 50.0), 1),
+                        "vitamin_c_mg": round(nutrients.get("VITC", {}).get("quantity", 3.0), 1),
+                        "iron_mg": round(nutrients.get("FE", {}).get("quantity", 1.2), 1),
+                        "calcium_mg": round(nutrients.get("CA", {}).get("quantity", 20.0), 1)
+                    }
                 }
             else:
                 print(f"[Edamam] No calorie data returned.")
@@ -471,7 +483,13 @@ async def predict_nutrition(
             "mass_grams": 0.0, 
             "fat_grams": 0.0,
             "carbs_grams": 0.0,
-            "protein_grams": 0.0
+            "protein_grams": 0.0,
+            "micronutrients": {
+                "vitamin_a_iu": 0.0,
+                "vitamin_c_mg": 0.0,
+                "iron_mg": 0.0,
+                "calcium_mg": 0.0
+            }
         }
         
         # Determine the serving size per item
@@ -513,6 +531,12 @@ async def predict_nutrition(
                     total_macros["carbs_grams"] += item_macros["carbs_grams"]
                     total_macros["protein_grams"] += item_macros["protein_grams"]
                     total_mass_g += item_macros.get("mass_grams", per_item_mass_g)
+                    
+                    if "micronutrients" in item_macros:
+                        total_macros["micronutrients"]["vitamin_a_iu"] += item_macros["micronutrients"].get("vitamin_a_iu", 0)
+                        total_macros["micronutrients"]["vitamin_c_mg"] += item_macros["micronutrients"].get("vitamin_c_mg", 0)
+                        total_macros["micronutrients"]["iron_mg"] += item_macros["micronutrients"].get("iron_mg", 0)
+                        total_macros["micronutrients"]["calcium_mg"] += item_macros["micronutrients"].get("calcium_mg", 0)
                 else:
                     failed_foods.append(food)
                     print(f"[YOLO] Warning: {food} detected but not found in DB.")
@@ -541,7 +565,13 @@ async def predict_nutrition(
                 "mass_grams": round(total_macros["mass_grams"], 1),
                 "fat_grams": round(total_macros["fat_grams"], 1),
                 "carbs_grams": round(total_macros["carbs_grams"], 1),
-                "protein_grams": round(total_macros["protein_grams"], 1)
+                "protein_grams": round(total_macros["protein_grams"], 1),
+                "micronutrients": {
+                    "vitamin_a_iu": round(total_macros["micronutrients"]["vitamin_a_iu"], 1),
+                    "vitamin_c_mg": round(total_macros["micronutrients"]["vitamin_c_mg"], 1),
+                    "iron_mg": round(total_macros["micronutrients"]["iron_mg"], 1),
+                    "calcium_mg": round(total_macros["micronutrients"]["calcium_mg"], 1)
+                }
             }
         }
     except HTTPException:

@@ -20,6 +20,7 @@ env/
 Dataset/
 datasets/
 test_images/
+indian-food-6/
 
 # Models (too large for GitHub)
 *.pt

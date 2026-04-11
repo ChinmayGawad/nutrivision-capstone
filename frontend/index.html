@@ -634,6 +634,30 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Micronutrients Section -->
+                <div id="micronutrients-container" class="hidden border-t border-slate-700/50 pt-5 mt-2">
+                    <p class="text-xs text-slate-500 uppercase tracking-widest mb-3 font-semibold">Vitamins & Minerals</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="bg-slate-800/40 rounded-xl p-3 flex flex-col justify-center border border-white/5">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Vitamin A</span>
+                            <span class="text-sm font-bold text-slate-200"><span id="vit-a-result">0</span><span class="text-slate-500 text-xs font-medium ml-1">IU</span></span>
+                        </div>
+                        <div class="bg-slate-800/40 rounded-xl p-3 flex flex-col justify-center border border-white/5">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Vitamin C</span>
+                            <span class="text-sm font-bold text-slate-200"><span id="vit-c-result">0</span><span class="text-slate-500 text-xs font-medium ml-1">mg</span></span>
+                        </div>
+                        <div class="bg-slate-800/40 rounded-xl p-3 flex flex-col justify-center border border-white/5">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Calcium</span>
+                            <span class="text-sm font-bold text-slate-200"><span id="calc-result">0</span><span class="text-slate-500 text-xs font-medium ml-1">mg</span></span>
+                        </div>
+                        <div class="bg-slate-800/40 rounded-xl p-3 flex flex-col justify-center border border-white/5">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Iron</span>
+                            <span class="text-sm font-bold text-slate-200"><span id="iron-result">0</span><span class="text-slate-500 text-xs font-medium ml-1">mg</span></span>
+                        </div>
+                    </div>
+                </div>
+                
             </div>
 
         </div>
@@ -897,6 +921,18 @@
             animateCounter('carb-result', 0, macros.carbs_grams, 700);
             animateCounter('fat-result', 0, macros.fat_grams, 700);
             animateCounter('mass-result', 0, macros.mass_grams, 600);
+            
+            // Micronutrients
+            const microContainer = document.getElementById('micronutrients-container');
+            if (macros.micronutrients) {
+                animateCounter('vit-a-result', 0, macros.micronutrients.vitamin_a_iu || 0, 800);
+                animateCounter('vit-c-result', 0, macros.micronutrients.vitamin_c_mg || 0, 800);
+                animateCounter('calc-result', 0, macros.micronutrients.calcium_mg || 0, 800);
+                animateCounter('iron-result', 0, macros.micronutrients.iron_mg || 0, 800);
+                if (microContainer) microContainer.classList.remove('hidden');
+            } else if (microContainer) {
+                microContainer.classList.add('hidden');
+            }
 
             // Macro percentages
             const total = macros.protein_grams + macros.carbs_grams + macros.fat_grams || 1;
