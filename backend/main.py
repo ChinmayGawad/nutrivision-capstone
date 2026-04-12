@@ -645,3 +645,4 @@ if __name__ == "__main__":
     log_security_event("SERVER_START", "NutriVision API server starting", severity="INFO")
     # Run the Cloud server
     uvicorn.run(app, host="0.0.0.0", port=7860)
+ 
