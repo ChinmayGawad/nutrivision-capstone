@@ -455,11 +455,13 @@
                 <div id="manual-name-section" class="hidden">
                     <div class="flex items-center gap-2 mb-1.5">
                         <i class="fa-solid fa-pen text-slate-500 text-xs"></i>
-                        <label for="food-name-input" class="text-xs text-slate-400 font-medium">Optional: Tell AI what food this is</label>
+                        <label for="food-name-input" class="text-xs text-slate-400 font-medium">Optional: Tell AI what
+                            food this is</label>
                     </div>
                     <input type="text" id="food-name-input" placeholder="e.g. pizza, biryani, ramen, burger..."
                         class="dark-input w-full rounded-xl px-4 py-2.5 text-sm">
-                    <p class="text-xs text-slate-600 mt-1"><i class="fa-solid fa-circle-info mr-1"></i>If AI can't detect the food, type its name here and re-analyze.</p>
+                    <p class="text-xs text-slate-600 mt-1"><i class="fa-solid fa-circle-info mr-1"></i>If AI can't
+                        detect the food, type its name here and re-analyze.</p>
                 </div>
 
                 <!-- Analyze Button -->
@@ -634,30 +636,35 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Micronutrients Section -->
                 <div id="micronutrients-container" class="hidden border-t border-slate-700/50 pt-5 mt-2">
-                    <p class="text-xs text-slate-500 uppercase tracking-widest mb-3 font-semibold">Vitamins & Minerals</p>
+                    <p class="text-xs text-slate-500 uppercase tracking-widest mb-3 font-semibold">Vitamins & Minerals
+                    </p>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div class="bg-slate-800/40 rounded-xl p-3 flex flex-col justify-center border border-white/5">
                             <span class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Vitamin A</span>
-                            <span class="text-sm font-bold text-slate-200"><span id="vit-a-result">0</span><span class="text-slate-500 text-xs font-medium ml-1">IU</span></span>
+                            <span class="text-sm font-bold text-slate-200"><span id="vit-a-result">0</span><span
+                                    class="text-slate-500 text-xs font-medium ml-1">IU</span></span>
                         </div>
                         <div class="bg-slate-800/40 rounded-xl p-3 flex flex-col justify-center border border-white/5">
                             <span class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Vitamin C</span>
-                            <span class="text-sm font-bold text-slate-200"><span id="vit-c-result">0</span><span class="text-slate-500 text-xs font-medium ml-1">mg</span></span>
+                            <span class="text-sm font-bold text-slate-200"><span id="vit-c-result">0</span><span
+                                    class="text-slate-500 text-xs font-medium ml-1">mg</span></span>
                         </div>
                         <div class="bg-slate-800/40 rounded-xl p-3 flex flex-col justify-center border border-white/5">
                             <span class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Calcium</span>
-                            <span class="text-sm font-bold text-slate-200"><span id="calc-result">0</span><span class="text-slate-500 text-xs font-medium ml-1">mg</span></span>
+                            <span class="text-sm font-bold text-slate-200"><span id="calc-result">0</span><span
+                                    class="text-slate-500 text-xs font-medium ml-1">mg</span></span>
                         </div>
                         <div class="bg-slate-800/40 rounded-xl p-3 flex flex-col justify-center border border-white/5">
                             <span class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Iron</span>
-                            <span class="text-sm font-bold text-slate-200"><span id="iron-result">0</span><span class="text-slate-500 text-xs font-medium ml-1">mg</span></span>
+                            <span class="text-sm font-bold text-slate-200"><span id="iron-result">0</span><span
+                                    class="text-slate-500 text-xs font-medium ml-1">mg</span></span>
                         </div>
                     </div>
                 </div>
-                
+
             </div>
 
         </div>
@@ -666,7 +673,8 @@
         <div class="mt-10 flex gap-6 text-slate-600 text-xs font-medium flex-wrap justify-center">
             <span class="flex items-center gap-1.5"><i class="fa-brands fa-python text-emerald-800"></i> FastAPI
                 Backend</span>
-            <span class="flex items-center gap-1.5"><i class="fa-solid fa-cloud text-blue-900"></i> Cloud Hosted</span>
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-cloud text-blue-900"></i> Hugging Face Space
+                (16GB RAM)</span>
             <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-purple-900"></i> JWT +
                 RBAC Secured</span>
             <span class="flex items-center gap-1.5"><i class="fa-solid fa-microchip text-slate-700"></i> YOLOv8
@@ -677,9 +685,9 @@
         </div>
         <!-- Privacy Policy & DPDP Act / GDPR Compliance Link -->
         <div class="mt-4 text-center">
-            <a href="#" onclick="window.open(API_BASE + '/privacy', '_blank')" 
-               class="text-slate-600 hover:text-emerald-400 text-xs font-medium transition-colors cursor-pointer"
-               style="text-decoration: underline; text-underline-offset: 3px;">
+            <a href="#" onclick="window.open(API_BASE + '/privacy', '_blank')"
+                class="text-slate-600 hover:text-emerald-400 text-xs font-medium transition-colors cursor-pointer"
+                style="text-decoration: underline; text-underline-offset: 3px;">
                 <i class="fa-solid fa-scale-balanced mr-1"></i>Privacy Policy · DPDP Act 2023 · GDPR Compliance
             </a>
         </div>
@@ -691,10 +699,11 @@
         // CONFIG: Change this to your Render URL after deploy
         // e.g. "https://nutrivision-backend.onrender.com"
         // =====================================================
-        // Auto-detect env: use local backend when developing, Render when deployed on Netlify
-        const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:")
-            ? "http://127.0.0.1:8000"
-            : "https://chinmaygawad-nutrivision-backend.hf.space"; // <-- Update this to your deployed Render URL!
+        // CONFIG: Your Hugging Face Backend URL
+        // =====================================================
+        // FORCING Cloud URL to avoid "Connection Refused" local errors
+        const API_BASE = "https://chinmaygawad-nutrivision-backend.hf.space";
+
         const dropZone = document.getElementById('drop-zone');
         const browseBtn = document.getElementById('browse-btn');
         const fileInput = document.getElementById('file-input');
@@ -784,6 +793,7 @@
 
             try {
                 const startTime = Date.now();
+                console.log("Fetching from:", `${API_BASE}/predict`);
                 const response = await fetch(`${API_BASE}/predict`, {
                     method: 'POST',
                     body: formData
@@ -921,7 +931,7 @@
             animateCounter('carb-result', 0, macros.carbs_grams, 700);
             animateCounter('fat-result', 0, macros.fat_grams, 700);
             animateCounter('mass-result', 0, macros.mass_grams, 600);
-            
+
             // Micronutrients
             const microContainer = document.getElementById('micronutrients-container');
             if (macros.micronutrients) {

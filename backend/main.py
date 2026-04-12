@@ -22,7 +22,13 @@ load_dotenv()
 
 
 # In a real environment, load this safely from an environment variable!
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "my_super_secret_jwt_key")
+# CyberSecurity Requirement: Load secrets from environment variables
+# Set these as "Secrets" in your Hugging Face Space Settings!
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    # Fail-safe (only for local development if not set)
+    SECRET_KEY = "local_dev_secret_only_change_in_production"
+    
 ALGORITHM = "HS256"
 
 # ----------------------------------------
@@ -32,7 +38,7 @@ ALGORITHM = "HS256"
 # This supports incident response, forensic investigation, and
 # compliance requirements (ISO 27001, NIST, DPDP Act 2023).
 
-LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "logs")
+LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 
 audit_logger = logging.getLogger("security_audit")
@@ -49,9 +55,9 @@ def log_security_event(event_type: str, details: str, ip: str = "unknown", sever
     level = getattr(logging, severity.upper(), logging.INFO)
     audit_logger.log(level, f"[{event_type}] IP={ip} | {details}")
 
-# Edamam Nutrition API Keys
-EDAMAM_APP_ID = "cc3fe44a"
-EDAMAM_APP_KEY = "6be30bfa2e95a94ee8997ef0d195a6ec"
+# Edamam Nutrition API Keys (Loaded from Environment)
+EDAMAM_APP_ID = os.getenv("EDAMAM_APP_ID")
+EDAMAM_APP_KEY = os.getenv("EDAMAM_APP_KEY")
 
 # 1. Initialize FastAPI & Rate Limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -83,7 +89,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
             "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
             "img-src 'self' data: blob:; "
-            "connect-src 'self' https://*.onrender.com https://*.hf.space http://127.0.0.1:* http://localhost:*;"
+            "connect-src 'self' https://*.onrender.com https://*.hf.space https://*.anotherwebservice.com http://127.0.0.1:* http://localhost:*;"
         )
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"  # Restrict browser APIs
         return response
@@ -93,8 +99,8 @@ app.add_middleware(SecurityHeadersMiddleware)  # CyberSecurity: Strict HTTP head
 app.add_middleware(SlowAPIMiddleware) # CyberSecurity: Prevents DDoS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://YOUR-FRONTEND-APP-NAME.netlify.app", "*"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -104,8 +110,8 @@ app.add_middleware(
 # We load BOTH the baseline model (256 classes) and the Indian Food model
 # so it can recognize foods from both datasets simultaneously.
 
-BASE_YOLO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "runs", "detect", "food_detector5", "weights", "best.pt")
-INDIAN_YOLO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "runs", "detect", "indian_food_v2", "weights", "best.pt")
+BASE_YOLO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weights", "food_baseline.pt")
+INDIAN_YOLO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weights", "indian_food.pt")
 FALLBACK_YOLO = "yolov8n.pt"
 
 yolo_models = []
@@ -140,7 +146,7 @@ except Exception as e:
 def _load_nutrition_db():
     db = {}
     csv_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "Dataset", "ingredients_metadata.csv")
+        os.path.join(os.path.dirname(__file__), "data", "ingredients_metadata.csv")
     )
     if os.path.exists(csv_path):
         try:
@@ -166,7 +172,10 @@ def _load_nutrition_db():
         print(f"[NutritionDB] ingredients_metadata.csv not found — using manual DB only")
 
     # Manual overrides / items not in Nutrition5k (imported from external file)
-    from backend.nutrition_data import MANUAL_NUTRITION_DB
+    try:
+        from nutrition_data import MANUAL_NUTRITION_DB
+    except ImportError:
+        from backend.nutrition_data import MANUAL_NUTRITION_DB
     manual = MANUAL_NUTRITION_DB
     db.update(manual)   # manual entries win on overlap
     return db
@@ -657,4 +666,4 @@ if __name__ == "__main__":
     import uvicorn
     log_security_event("SERVER_START", "NutriVision API server starting", severity="INFO")
     # Run the Cloud server
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=7860)

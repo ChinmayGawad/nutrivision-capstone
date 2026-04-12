@@ -29,6 +29,15 @@ weights/
 best.pt
 last.pt
 
+# EXCEPTIONS: Allow necessary models for Hugging Face Space
+!backend/weights/
+!backend/weights/*.pt
+!backend/data/
+!backend/data/*.csv
+
+
+
+
 # YOLOv8 Training Runs
 runs/
 
