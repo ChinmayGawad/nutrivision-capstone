@@ -433,13 +433,17 @@ async def predict_nutrition(
                             conf_val = float(box.conf)
                             
                             # Calibration heuristic: The specialized Indian food model (29 classes)
-                            # gets a scaled confidence boost — but ONLY if its raw confidence
-                            # is reasonably high (>= 0.40). The boost is proportional to raw
-                            # confidence to prevent weak misclassifications from dominating.
-                            # At 0.40 raw → +0.10 boost; at 0.80 raw → +0.20 boost
-                            if len(model.names) <= 100 and conf_val >= 0.40:
-                                boost = 0.10 + (conf_val - 0.40) * 0.25  # scales from +0.10 to +0.20
-                                adjusted_conf = conf_val + boost
+                            # is prone to false positives on generic foods. We penalize weak detections (< 0.50).
+                            # Confident detections (>= 0.70) get a slight boost, strictly capped at 0.95 so
+                            # overwhelmingly confident base model predictions always win.
+                            if len(model.names) <= 100:
+                                if conf_val >= 0.70:
+                                    boost = 0.05 + (conf_val - 0.70) * 0.5
+                                    adjusted_conf = min(0.95, conf_val + boost)
+                                elif conf_val >= 0.50:
+                                    adjusted_conf = conf_val
+                                else:
+                                    adjusted_conf = conf_val * 0.5
                             else:
                                 adjusted_conf = conf_val
                             
@@ -459,9 +463,14 @@ async def predict_nutrition(
                             cls_name = model.names[int(box.cls)].replace("_", " ")
                             conf_val = float(box.conf)
                             
-                            if len(model.names) <= 100 and conf_val >= 0.40:
-                                boost = 0.10 + (conf_val - 0.40) * 0.25
-                                adjusted_conf = conf_val + boost
+                            if len(model.names) <= 100:
+                                if conf_val >= 0.70:
+                                    boost = 0.05 + (conf_val - 0.70) * 0.5
+                                    adjusted_conf = min(0.95, conf_val + boost)
+                                elif conf_val >= 0.50:
+                                    adjusted_conf = conf_val
+                                else:
+                                    adjusted_conf = conf_val * 0.5
                             else:
                                 adjusted_conf = conf_val
                             
