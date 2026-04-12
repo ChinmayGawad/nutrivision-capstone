@@ -637,33 +637,7 @@
                     </div>
                 </div>
 
-                <!-- Micronutrients Section -->
-                <div id="micronutrients-container" class="hidden border-t border-slate-700/50 pt-5 mt-2">
-                    <p class="text-xs text-slate-500 uppercase tracking-widest mb-3 font-semibold">Vitamins & Minerals
-                    </p>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div class="bg-slate-800/40 rounded-xl p-3 flex flex-col justify-center border border-white/5">
-                            <span class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Vitamin A</span>
-                            <span class="text-sm font-bold text-slate-200"><span id="vit-a-result">0</span><span
-                                    class="text-slate-500 text-xs font-medium ml-1">IU</span></span>
-                        </div>
-                        <div class="bg-slate-800/40 rounded-xl p-3 flex flex-col justify-center border border-white/5">
-                            <span class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Vitamin C</span>
-                            <span class="text-sm font-bold text-slate-200"><span id="vit-c-result">0</span><span
-                                    class="text-slate-500 text-xs font-medium ml-1">mg</span></span>
-                        </div>
-                        <div class="bg-slate-800/40 rounded-xl p-3 flex flex-col justify-center border border-white/5">
-                            <span class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Calcium</span>
-                            <span class="text-sm font-bold text-slate-200"><span id="calc-result">0</span><span
-                                    class="text-slate-500 text-xs font-medium ml-1">mg</span></span>
-                        </div>
-                        <div class="bg-slate-800/40 rounded-xl p-3 flex flex-col justify-center border border-white/5">
-                            <span class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Iron</span>
-                            <span class="text-sm font-bold text-slate-200"><span id="iron-result">0</span><span
-                                    class="text-slate-500 text-xs font-medium ml-1">mg</span></span>
-                        </div>
-                    </div>
-                </div>
+
 
             </div>
 
@@ -696,13 +670,71 @@
 
     <script>
         // =====================================================
-        // CONFIG: Change this to your Render URL after deploy
-        // e.g. "https://nutrivision-backend.onrender.com"
+        // CONFIG: Smart Backend Failover
+        // Tries cloud first, falls back to local if unavailable
         // =====================================================
-        // CONFIG: Your Hugging Face Backend URL
-        // =====================================================
-        // FORCING Cloud URL to avoid "Connection Refused" local errors
-        const API_BASE = "https://chinmaygawad-nutrivision-backend.hf.space";
+        const CLOUD_URL = "https://chinmaygawad-nutrivision-backend.hf.space";
+        const LOCAL_URL = "http://127.0.0.1:8000";
+        let API_BASE = CLOUD_URL; // Default to cloud
+        let backendMode = "checking"; // "cloud", "local", "checking"
+
+        // Health-check the cloud backend; fall back to local if unreachable
+        async function resolveBackend() {
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
+                const res = await fetch(`${CLOUD_URL}/`, { signal: controller.signal });
+                clearTimeout(timeout);
+                if (res.ok) {
+                    API_BASE = CLOUD_URL;
+                    backendMode = "cloud";
+                    console.log("[Backend] ✅ Cloud backend is reachable");
+                    updateBackendBadge();
+                    return;
+                }
+            } catch (e) {
+                console.warn("[Backend] ⚠ Cloud unreachable:", e.message);
+            }
+            // Fallback: try local
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 3000);
+                const res = await fetch(`${LOCAL_URL}/`, { signal: controller.signal });
+                clearTimeout(timeout);
+                if (res.ok) {
+                    API_BASE = LOCAL_URL;
+                    backendMode = "local";
+                    console.log("[Backend] 🖥 Using local backend");
+                    showToast("Cloud unavailable — using local backend", "warning");
+                    updateBackendBadge();
+                    return;
+                }
+            } catch (e) {
+                console.warn("[Backend] ⚠ Local also unreachable:", e.message);
+            }
+            // Both unreachable — keep cloud as default, will error on predict
+            API_BASE = CLOUD_URL;
+            backendMode = "offline";
+            console.error("[Backend] ❌ No backend available");
+            updateBackendBadge();
+        }
+
+        function updateBackendBadge() {
+            const badge = document.querySelector('.pulse-dot');
+            const label = badge ? badge.parentElement : null;
+            if (!label) return;
+            if (backendMode === "cloud") {
+                label.innerHTML = '<span class="pulse-dot"></span> Cloud Backend Active';
+                badge?.style && (badge.style.background = '#10b981');
+            } else if (backendMode === "local") {
+                label.innerHTML = '<span class="pulse-dot" style="background:#fbbf24"></span> Local Backend Active';
+            } else if (backendMode === "offline") {
+                label.innerHTML = '<span class="pulse-dot" style="background:#ef4444"></span> Backend Offline';
+            }
+        }
+
+        // Run health check on page load
+        resolveBackend();
 
         const dropZone = document.getElementById('drop-zone');
         const browseBtn = document.getElementById('browse-btn');
@@ -791,13 +823,42 @@
                 formData.append('food_name', foodNameInput.value.trim());
             }
 
+            // Helper: attempt prediction against a specific URL
+            async function tryPredict(baseUrl) {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 30000); // 30s for prediction
+                const response = await fetch(`${baseUrl}/predict`, {
+                    method: 'POST',
+                    body: formData,
+                    signal: controller.signal
+                });
+                clearTimeout(timeout);
+                return response;
+            }
+
             try {
                 const startTime = Date.now();
-                console.log("Fetching from:", `${API_BASE}/predict`);
-                const response = await fetch(`${API_BASE}/predict`, {
-                    method: 'POST',
-                    body: formData
-                });
+                let response;
+                const fallbackUrl = API_BASE === CLOUD_URL ? LOCAL_URL : CLOUD_URL;
+
+                // Try primary backend
+                try {
+                    console.log("[Predict] Trying primary:", API_BASE);
+                    response = await tryPredict(API_BASE);
+                } catch (primaryErr) {
+                    // Primary failed — try fallback
+                    console.warn("[Predict] Primary failed, trying fallback:", fallbackUrl);
+                    showToast(`Switching to ${fallbackUrl === LOCAL_URL ? 'local' : 'cloud'} backend...`, 'warning');
+                    try {
+                        response = await tryPredict(fallbackUrl);
+                        // Fallback succeeded — update API_BASE for future requests
+                        API_BASE = fallbackUrl;
+                        backendMode = fallbackUrl === LOCAL_URL ? "local" : "cloud";
+                        updateBackendBadge();
+                    } catch (fallbackErr) {
+                        throw new Error("Both cloud and local backends are unreachable. Please check your connection.");
+                    }
+                }
 
                 if (response.status === 429) {
                     showRateLimitError();
@@ -931,18 +992,6 @@
             animateCounter('carb-result', 0, macros.carbs_grams, 700);
             animateCounter('fat-result', 0, macros.fat_grams, 700);
             animateCounter('mass-result', 0, macros.mass_grams, 600);
-
-            // Micronutrients
-            const microContainer = document.getElementById('micronutrients-container');
-            if (macros.micronutrients) {
-                animateCounter('vit-a-result', 0, macros.micronutrients.vitamin_a_iu || 0, 800);
-                animateCounter('vit-c-result', 0, macros.micronutrients.vitamin_c_mg || 0, 800);
-                animateCounter('calc-result', 0, macros.micronutrients.calcium_mg || 0, 800);
-                animateCounter('iron-result', 0, macros.micronutrients.iron_mg || 0, 800);
-                if (microContainer) microContainer.classList.remove('hidden');
-            } else if (microContainer) {
-                microContainer.classList.add('hidden');
-            }
 
             // Macro percentages
             const total = macros.protein_grams + macros.carbs_grams + macros.fat_grams || 1;

@@ -1,23 +1,35 @@
 """
 Static, manually predefined nutrition database for NutriVision AI.
-These values per 100g take precedence over the Kaggle CSV datasets.
+All values are per 100g of PREPARED/COOKED food (not raw/dry weight).
+These values take precedence over the Kaggle CSV datasets.
+
+Sources: USDA FoodData Central, IFCT (Indian Food Composition Tables),
+         Japan Standard Tables of Food Composition.
+Last audited: 2026-04-12
 """
 
 MANUAL_NUTRITION_DB = {
-    # Eggs
+    # ═══════════════════════════════════════════
+    # EGGS (per 100g cooked)
+    # ═══════════════════════════════════════════
     "egg":            {"calories": 155, "fat": 11.0, "carbs": 1.1,  "protein": 13.0},
     "eggs":           {"calories": 155, "fat": 11.0, "carbs": 1.1,  "protein": 13.0},
     "boiled egg":     {"calories": 155, "fat": 11.0, "carbs": 1.1,  "protein": 13.0},
     "fried egg":      {"calories": 196, "fat": 15.0, "carbs": 0.8,  "protein": 14.0},
-    "omelette":       {"calories": 154, "fat": 11.0, "carbs": 0.9,  "protein": 11.0},
-    "omelet":         {"calories": 154, "fat": 11.0, "carbs": 0.9,  "protein": 11.0},
-    "egg omelette":   {"calories": 154, "fat": 11.0, "carbs": 0.9,  "protein": 11.0},
-    "egg omelet":     {"calories": 154, "fat": 11.0, "carbs": 0.9,  "protein": 11.0},
-    "poached egg":    {"calories": 143, "fat": 9.5,  "carbs": 0.7,  "protein": 13.0},
-    
-    # Fast Food / Breads
+    "omelette":       {"calories": 154, "fat": 12.0, "carbs": 0.6,  "protein": 11.0},
+    "omelet":         {"calories": 154, "fat": 12.0, "carbs": 0.6,  "protein": 11.0},
+    "egg omelette":   {"calories": 154, "fat": 12.0, "carbs": 0.6,  "protein": 11.0},
+    "egg omelet":     {"calories": 154, "fat": 12.0, "carbs": 0.6,  "protein": 11.0},
+    "poached egg":    {"calories": 143, "fat": 9.5,  "carbs": 0.7,  "protein": 12.6},
+    "scrambled egg":  {"calories": 166, "fat": 12.2, "carbs": 1.6,  "protein": 11.1},
+
+    # ═══════════════════════════════════════════
+    # FAST FOOD / BREADS (per 100g prepared)
+    # ═══════════════════════════════════════════
     "pizza":          {"calories": 266, "fat": 10.0, "carbs": 33.0, "protein": 11.0},
     "burger":         {"calories": 295, "fat": 14.0, "carbs": 24.0, "protein": 17.0},
+    "hamburger":      {"calories": 295, "fat": 14.0, "carbs": 24.0, "protein": 17.0},
+    "cheeseburger":   {"calories": 303, "fat": 14.0, "carbs": 26.0, "protein": 16.0},
     "roti":           {"calories": 297, "fat": 3.7,  "carbs": 60.0, "protein": 9.0},
     "roti phulka":    {"calories": 297, "fat": 3.7,  "carbs": 60.0, "protein": 9.0},
     "chapati":        {"calories": 297, "fat": 3.7,  "carbs": 60.0, "protein": 9.0},
@@ -27,34 +39,42 @@ MANUAL_NUTRITION_DB = {
     "biryani":        {"calories": 163, "fat": 5.0,  "carbs": 22.0, "protein": 8.0},
     "paneer":         {"calories": 265, "fat": 20.0, "carbs": 3.6,  "protein": 18.0},
     "french fries":   {"calories": 312, "fat": 15.0, "carbs": 41.0, "protein": 3.4},
+    "fries":          {"calories": 312, "fat": 15.0, "carbs": 41.0, "protein": 3.4},
     "donut":          {"calories": 452, "fat": 25.0, "carbs": 51.0, "protein": 5.0},
+    "doughnut":       {"calories": 452, "fat": 25.0, "carbs": 51.0, "protein": 5.0},
     "pancake":        {"calories": 227, "fat": 8.0,  "carbs": 36.0, "protein": 6.0},
     "hot dog":        {"calories": 290, "fat": 17.0, "carbs": 22.0, "protein": 11.0},
-    
-    # Japanese Foods
-    "okinawa soba":   {"calories": 420, "fat": 12.0, "carbs": 60.0, "protein": 18.0},
-    "goya chanpuru":  {"calories": 240, "fat": 15.0, "carbs": 12.0, "protein": 14.0},
-    "sushi":          {"calories": 350, "fat": 2.0,  "carbs": 75.0, "protein": 11.0},
-    "ramen":          {"calories": 436, "fat": 16.0, "carbs": 55.0, "protein": 15.0},
-    "takoyaki":       {"calories": 310, "fat": 14.0, "carbs": 38.0, "protein": 9.0},
-    "okonomiyaki":    {"calories": 520, "fat": 22.0, "carbs": 65.0, "protein": 17.0},
-    "udon":           {"calories": 280, "fat": 2.0,  "carbs": 55.0, "protein": 10.0},
-    "curry":          {"calories": 480, "fat": 20.0, "carbs": 60.0, "protein": 12.0},
-    "tempura":        {"calories": 320, "fat": 20.0, "carbs": 30.0, "protein": 6.0},
+
+    # ═══════════════════════════════════════════
+    # JAPANESE FOODS (per 100g prepared/served)
+    # ═══════════════════════════════════════════
+    "okinawa soba":   {"calories": 150, "fat": 4.0,  "carbs": 20.0, "protein": 7.0},
+    "goya chanpuru":  {"calories": 120, "fat": 7.0,  "carbs": 5.0,  "protein": 10.0},
+    "sushi":          {"calories": 150, "fat": 2.5,  "carbs": 27.0, "protein": 6.0},
+    "ramen":          {"calories": 140, "fat": 5.0,  "carbs": 17.0, "protein": 8.0},
+    "takoyaki":       {"calories": 200, "fat": 8.0,  "carbs": 24.0, "protein": 7.0},
+    "okonomiyaki":    {"calories": 200, "fat": 9.0,  "carbs": 22.0, "protein": 8.0},
+    "udon":           {"calories": 105, "fat": 0.4,  "carbs": 22.0, "protein": 3.0},
+    "curry":          {"calories": 150, "fat": 7.0,  "carbs": 16.0, "protein": 6.0},
+    "dry curry":      {"calories": 145, "fat": 6.0,  "carbs": 17.0, "protein": 5.0},
+    "tempura":        {"calories": 230, "fat": 14.0, "carbs": 18.0, "protein": 7.0},
     "yakitori":       {"calories": 150, "fat": 6.0,  "carbs": 2.0,  "protein": 22.0},
-    "tonkatsu":       {"calories": 550, "fat": 35.0, "carbs": 30.0, "protein": 25.0},
+    "tonkatsu":       {"calories": 220, "fat": 14.0, "carbs": 10.0, "protein": 18.0},
     "miso soup":      {"calories": 40,  "fat": 1.5,  "carbs": 4.0,  "protein": 3.0},
-    "gyudon":         {"calories": 650, "fat": 25.0, "carbs": 85.0, "protein": 22.0},
-    "karaage":        {"calories": 290, "fat": 18.0, "carbs": 12.0, "protein": 16.0},
-    "sashimi":       {"calories": 127, "fat": 4.0,  "carbs": 0.0,  "protein": 22.0},
-    "salmon sashimi": {"calories": 180, "fat": 10.0, "carbs": 0.0,  "protein": 20.0},
+    "gyudon":         {"calories": 170, "fat": 7.0,  "carbs": 20.0, "protein": 9.0},
+    "karaage":        {"calories": 250, "fat": 15.0, "carbs": 10.0, "protein": 18.0},
+    "sashimi":        {"calories": 127, "fat": 4.0,  "carbs": 0.0,  "protein": 22.0},
+    "salmon sashimi": {"calories": 146, "fat": 6.3,  "carbs": 0.0,  "protein": 20.0},
     "tuna sashimi":   {"calories": 110, "fat": 0.5,  "carbs": 0.0,  "protein": 24.0},
-    "udon noodles":   {"calories": 280, "fat": 2.0,  "carbs": 55.0, "protein": 10.0},
-    "soba":           {"calories": 300, "fat": 2.0,  "carbs": 60.0, "protein": 12.0},
-    "yakisoba":       {"calories": 450, "fat": 15.0, "carbs": 65.0, "protein": 12.0},
-    "gyoza":          {"calories": 250, "fat": 12.0, "carbs": 25.0, "protein": 10.0},
-    
-    # Indian / South Asian Foods
+    "udon noodles":   {"calories": 105, "fat": 0.4,  "carbs": 22.0, "protein": 3.0},
+    "soba":           {"calories": 99,  "fat": 0.7,  "carbs": 20.0, "protein": 5.0},
+    "yakisoba":       {"calories": 165, "fat": 6.0,  "carbs": 22.0, "protein": 6.0},
+    "gyoza":          {"calories": 206, "fat": 8.0,  "carbs": 24.0, "protein": 9.0},
+
+    # ═══════════════════════════════════════════
+    # INDIAN / SOUTH ASIAN FOODS (per 100g prepared)
+    # Source: IFCT 2017 + cross-referenced with USDA
+    # ═══════════════════════════════════════════
     "momos":          {"calories": 200, "fat": 8.0,  "carbs": 25.0, "protein": 10.0},
     "momo":           {"calories": 200, "fat": 8.0,  "carbs": 25.0, "protein": 10.0},
     "steamed momos":  {"calories": 180, "fat": 6.0,  "carbs": 25.0, "protein": 10.0},
@@ -62,40 +82,51 @@ MANUAL_NUTRITION_DB = {
     "samosa":         {"calories": 262, "fat": 14.0, "carbs": 28.0, "protein": 5.0},
     "vada pav":       {"calories": 290, "fat": 15.0, "carbs": 35.0, "protein": 5.0},
     "pav bhaji":      {"calories": 210, "fat": 10.0, "carbs": 26.0, "protein": 5.0},
-    "chole bhature":  {"calories": 427, "fat": 22.0, "carbs": 45.0, "protein": 12.0},
+    "chole bhature":  {"calories": 360, "fat": 18.0, "carbs": 40.0, "protein": 10.0},
     "chole":          {"calories": 160, "fat": 5.0,  "carbs": 22.0, "protein": 8.0},
     "chana masala":   {"calories": 160, "fat": 5.0,  "carbs": 22.0, "protein": 8.0},
     "rajma":          {"calories": 130, "fat": 3.5,  "carbs": 18.0, "protein": 7.0},
     "aloo gobi":      {"calories": 120, "fat": 6.0,  "carbs": 14.0, "protein": 3.0},
     "aloo gobhi":     {"calories": 120, "fat": 6.0,  "carbs": 14.0, "protein": 3.0},
     "aloo sabji":     {"calories": 100, "fat": 4.0,  "carbs": 14.0, "protein": 2.0},
+    "aloo sabzi":     {"calories": 100, "fat": 4.0,  "carbs": 14.0, "protein": 2.0},
     "bhakarwadi":     {"calories": 450, "fat": 25.0, "carbs": 50.0, "protein": 8.0},
     "bhakri":         {"calories": 300, "fat": 5.0,  "carbs": 55.0, "protein": 8.0},
     "bhindi":         {"calories": 80,  "fat": 4.0,  "carbs": 9.0,  "protein": 2.0},
+    "bhindi masala":  {"calories": 80,  "fat": 4.0,  "carbs": 9.0,  "protein": 2.0},
+    "okra":           {"calories": 33,  "fat": 0.2,  "carbs": 7.0,  "protein": 1.9},
     "khandvi":        {"calories": 150, "fat": 8.0,  "carbs": 15.0, "protein": 5.0},
-    "coconut chutney":{"calories": 250, "fat": 20.0, "carbs": 15.0, "protein": 4.0},
+    "coconut chutney": {"calories": 130, "fat": 10.0, "carbs": 8.0,  "protein": 2.0},
     "daal":           {"calories": 116, "fat": 0.4,  "carbs": 20.0, "protein": 8.0},
     "saag":           {"calories": 100, "fat": 6.0,  "carbs": 10.0, "protein": 4.0},
-    "sambhar":        {"calories": 100, "fat": 3.0,  "carbs": 15.0, "protein": 4.0},
+    "palak":          {"calories": 100, "fat": 6.0,  "carbs": 10.0, "protein": 4.0},
+    "sambhar":        {"calories": 65,  "fat": 2.0,  "carbs": 9.0,  "protein": 3.0},
+    "sambar":         {"calories": 65,  "fat": 2.0,  "carbs": 9.0,  "protein": 3.0},
     "thepla":         {"calories": 280, "fat": 12.0, "carbs": 35.0, "protein": 7.0},
     "varan":          {"calories": 120, "fat": 3.0,  "carbs": 18.0, "protein": 5.0},
     "yellow dhokla":  {"calories": 160, "fat": 4.0,  "carbs": 24.0, "protein": 6.0},
+    "dhokla":         {"calories": 160, "fat": 4.0,  "carbs": 24.0, "protein": 6.0},
     "palak paneer":   {"calories": 170, "fat": 12.0, "carbs": 6.0,  "protein": 10.0},
     "butter chicken": {"calories": 240, "fat": 15.0, "carbs": 8.0,  "protein": 18.0},
     "chicken tikka":  {"calories": 165, "fat": 7.0,  "carbs": 3.0,  "protein": 22.0},
-    "tandoori chicken":{"calories": 165, "fat": 7.0,  "carbs": 3.0,  "protein": 22.0},
+    "tandoori chicken": {"calories": 165, "fat": 7.0,  "carbs": 3.0,  "protein": 22.0},
     "naan":           {"calories": 262, "fat": 5.0,  "carbs": 45.0, "protein": 9.0},
     "garlic naan":    {"calories": 290, "fat": 7.0,  "carbs": 46.0, "protein": 9.0},
-    "paratha":        {"calories": 326, "fat": 13.0, "carbs": 45.0, "protein": 7.0},
+    "paratha":        {"calories": 260, "fat": 10.0, "carbs": 36.0, "protein": 6.0},
+    "aloo paratha":   {"calories": 230, "fat": 9.0,  "carbs": 33.0, "protein": 5.0},
     "poori":          {"calories": 350, "fat": 18.0, "carbs": 42.0, "protein": 6.0},
     "puri":           {"calories": 350, "fat": 18.0, "carbs": 42.0, "protein": 6.0},
     "upma":           {"calories": 130, "fat": 4.0,  "carbs": 20.0, "protein": 3.5},
     "poha":           {"calories": 160, "fat": 5.0,  "carbs": 25.0, "protein": 3.0},
+    "flattened rice":  {"calories": 160, "fat": 5.0,  "carbs": 25.0, "protein": 3.0},
     "khichdi":        {"calories": 120, "fat": 3.0,  "carbs": 18.0, "protein": 5.0},
     "pulao":          {"calories": 160, "fat": 4.0,  "carbs": 26.0, "protein": 4.0},
     "veg-pulao":      {"calories": 160, "fat": 4.0,  "carbs": 26.0, "protein": 4.0},
+    "veg pulao":      {"calories": 160, "fat": 4.0,  "carbs": 26.0, "protein": 4.0},
     "rice":           {"calories": 130, "fat": 0.3,  "carbs": 28.0, "protein": 2.7},
-    "korma":          {"calories": 200, "fat": 14.0, "carbs": 8.0,  "protein": 14.0},
+    "white rice":     {"calories": 130, "fat": 0.3,  "carbs": 28.0, "protein": 2.7},
+    "brown rice":     {"calories": 123, "fat": 1.0,  "carbs": 26.0, "protein": 2.7},
+    "korma":          {"calories": 150, "fat": 10.0, "carbs": 6.0,  "protein": 12.0},
     "dal makhani":    {"calories": 140, "fat": 6.0,  "carbs": 14.0, "protein": 7.0},
     "masala dosa":    {"calories": 165, "fat": 5.0,  "carbs": 24.0, "protein": 5.0},
     "uttapam":        {"calories": 110, "fat": 3.0,  "carbs": 16.0, "protein": 4.0},
@@ -110,25 +141,35 @@ MANUAL_NUTRITION_DB = {
     "kheer":          {"calories": 150, "fat": 5.0,  "carbs": 22.0, "protein": 4.0},
     "halwa":          {"calories": 320, "fat": 15.0, "carbs": 45.0, "protein": 4.0},
     "ladoo":          {"calories": 400, "fat": 18.0, "carbs": 55.0, "protein": 6.0},
+    "laddoo":         {"calories": 400, "fat": 18.0, "carbs": 55.0, "protein": 6.0},
     "lassi":          {"calories": 75,  "fat": 2.5,  "carbs": 10.0, "protein": 3.0},
     "yogurt":         {"calories": 60,  "fat": 3.0,  "carbs": 4.7,  "protein": 3.5},
+    "curd":           {"calories": 60,  "fat": 3.0,  "carbs": 4.7,  "protein": 3.5},
+    "dahi":           {"calories": 60,  "fat": 3.0,  "carbs": 4.7,  "protein": 3.5},
+    "raita":          {"calories": 55,  "fat": 2.5,  "carbs": 5.0,  "protein": 3.0},
     "mango lassi":    {"calories": 95,  "fat": 2.5,  "carbs": 16.0, "protein": 3.0},
     "chai":           {"calories": 45,  "fat": 1.5,  "carbs": 6.0,  "protein": 2.0},
     "masala chai":    {"calories": 45,  "fat": 1.5,  "carbs": 6.0,  "protein": 2.0},
-    
-    # Chinese / Asian
+    "pav":            {"calories": 290, "fat": 4.0,  "carbs": 52.0, "protein": 8.0},
+
+    # ═══════════════════════════════════════════
+    # CHINESE / ASIAN (per 100g prepared)
+    # ═══════════════════════════════════════════
     "fried rice":     {"calories": 163, "fat": 4.0,  "carbs": 26.0, "protein": 5.0},
     "manchurian":     {"calories": 180, "fat": 10.0, "carbs": 18.0, "protein": 6.0},
     "spring roll":    {"calories": 220, "fat": 10.0, "carbs": 28.0, "protein": 5.0},
-    "chow mein":      {"calories": 220, "fat": 8.0,  "carbs": 30.0, "protein": 9.0},
+    "chow mein":      {"calories": 150, "fat": 5.0,  "carbs": 22.0, "protein": 6.0},
+    "noodles":        {"calories": 138, "fat": 2.0,  "carbs": 25.0, "protein": 5.0},
     "dim sum":        {"calories": 210, "fat": 8.0,  "carbs": 22.0, "protein": 12.0},
     "wonton":         {"calories": 180, "fat": 5.0,  "carbs": 24.0, "protein": 9.0},
-    "pad thai":       {"calories": 240, "fat": 9.0,  "carbs": 32.0, "protein": 10.0},
+    "pad thai":       {"calories": 150, "fat": 5.0,  "carbs": 20.0, "protein": 8.0},
     "tom yum":        {"calories": 60,  "fat": 2.0,  "carbs": 5.0,  "protein": 6.0},
-    
-    # Continental / Western Snacks
-    "pasta":          {"calories": 220, "fat": 5.0,  "carbs": 38.0, "protein": 8.0},
-    "spaghetti":      {"calories": 220, "fat": 5.0,  "carbs": 38.0, "protein": 8.0},
+
+    # ═══════════════════════════════════════════
+    # CONTINENTAL / WESTERN (per 100g prepared)
+    # ═══════════════════════════════════════════
+    "pasta":          {"calories": 131, "fat": 1.1,  "carbs": 25.0, "protein": 5.0},
+    "spaghetti":      {"calories": 131, "fat": 1.1,  "carbs": 25.0, "protein": 5.0},
     "mac and cheese": {"calories": 310, "fat": 14.0, "carbs": 35.0, "protein": 12.0},
     "lasagna":        {"calories": 165, "fat": 7.0,  "carbs": 17.0, "protein": 9.0},
     "sandwich":       {"calories": 250, "fat": 10.0, "carbs": 30.0, "protein": 12.0},
@@ -142,19 +183,21 @@ MANUAL_NUTRITION_DB = {
     "salad":          {"calories": 50,  "fat": 2.0,  "carbs": 6.0,  "protein": 2.0},
     "caesar salad":   {"calories": 150, "fat": 10.0, "carbs": 8.0,  "protein": 8.0},
     "steak":          {"calories": 271, "fat": 19.0, "carbs": 0.0,  "protein": 26.0},
-    "fried chicken":  {"calories": 290, "fat": 17.0, "carbs": 12.0, "protein": 22.0},
-    "chicken wings":  {"calories": 290, "fat": 19.0, "carbs": 6.0,  "protein": 24.0},
-    "fish and chips": {"calories": 250, "fat": 13.0, "carbs": 24.0, "protein": 12.0},
+    "fried chicken":  {"calories": 250, "fat": 15.0, "carbs": 10.0, "protein": 20.0},
+    "chicken wings":  {"calories": 250, "fat": 17.0, "carbs": 5.0,  "protein": 20.0},
+    "fish and chips": {"calories": 200, "fat": 10.0, "carbs": 18.0, "protein": 11.0},
     "nuggets":        {"calories": 296, "fat": 18.0, "carbs": 17.0, "protein": 15.0},
     "chicken nuggets": {"calories": 296, "fat": 18.0, "carbs": 17.0, "protein": 15.0},
-    
-    # Snacks & Beverages
+
+    # ═══════════════════════════════════════════
+    # SNACKS & BEVERAGES (per 100g)
+    # ═══════════════════════════════════════════
     "popcorn":        {"calories": 375, "fat": 4.5,  "carbs": 74.0, "protein": 11.0},
     "chips":          {"calories": 536, "fat": 35.0, "carbs": 51.0, "protein": 6.0},
     "nachos":         {"calories": 346, "fat": 19.0, "carbs": 36.0, "protein": 9.0},
     "ice cream":      {"calories": 207, "fat": 11.0, "carbs": 24.0, "protein": 3.5},
     "cake":           {"calories": 350, "fat": 15.0, "carbs": 50.0, "protein": 5.0},
-    "chocolate cake":  {"calories": 370, "fat": 16.0, "carbs": 52.0, "protein": 5.0},
+    "chocolate cake": {"calories": 370, "fat": 16.0, "carbs": 52.0, "protein": 5.0},
     "brownie":        {"calories": 405, "fat": 18.0, "carbs": 55.0, "protein": 5.0},
     "cookie":         {"calories": 440, "fat": 20.0, "carbs": 60.0, "protein": 5.0},
     "smoothie":       {"calories": 60,  "fat": 0.5,  "carbs": 13.0, "protein": 1.0},
@@ -162,8 +205,11 @@ MANUAL_NUTRITION_DB = {
     "coffee":         {"calories": 2,   "fat": 0.0,  "carbs": 0.3,  "protein": 0.3},
     "latte":          {"calories": 60,  "fat": 2.5,  "carbs": 6.0,  "protein": 4.0},
     "cappuccino":     {"calories": 50,  "fat": 2.0,  "carbs": 5.0,  "protein": 3.5},
-    
-    # Fruits
+    "juice":          {"calories": 45,  "fat": 0.1,  "carbs": 10.0, "protein": 0.3},
+
+    # ═══════════════════════════════════════════
+    # FRUITS (per 100g raw)
+    # ═══════════════════════════════════════════
     "apple":          {"calories": 52,  "fat": 0.2,  "carbs": 14.0, "protein": 0.3},
     "banana":         {"calories": 89,  "fat": 0.3,  "carbs": 23.0, "protein": 1.1},
     "mango":          {"calories": 60,  "fat": 0.4,  "carbs": 15.0, "protein": 0.8},
@@ -172,4 +218,9 @@ MANUAL_NUTRITION_DB = {
     "grapes":         {"calories": 69,  "fat": 0.2,  "carbs": 18.0, "protein": 0.7},
     "pineapple":      {"calories": 50,  "fat": 0.1,  "carbs": 13.0, "protein": 0.5},
     "strawberry":     {"calories": 32,  "fat": 0.3,  "carbs": 8.0,  "protein": 0.7},
+    "papaya":         {"calories": 43,  "fat": 0.3,  "carbs": 11.0, "protein": 0.5},
+    "guava":          {"calories": 68,  "fat": 1.0,  "carbs": 14.0, "protein": 2.6},
+    "pomegranate":    {"calories": 83,  "fat": 1.2,  "carbs": 19.0, "protein": 1.7},
+    "chiku":          {"calories": 83,  "fat": 1.1,  "carbs": 20.0, "protein": 0.4},
+    "sapota":         {"calories": 83,  "fat": 1.1,  "carbs": 20.0, "protein": 0.4},
 }
