@@ -81,7 +81,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"            # Prevent MIME-type sniffing
         response.headers["X-Frame-Options"] = "DENY"                      # Prevent Clickjacking
         response.headers["X-XSS-Protection"] = "1; mode=block"            # XSS filter (legacy browsers)
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"  # Force HTTPS
+        
+        # CyberSecurity: Enforce HTTPS via HSTS, but exclude local development hostnames
+        if request.url.hostname not in ("127.0.0.1", "localhost"):
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"  # Force HTTPS
+            
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"  # Control referrer leakage
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "

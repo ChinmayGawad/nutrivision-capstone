@@ -674,7 +674,7 @@
         // Tries cloud first, falls back to local if unavailable
         // =====================================================
         const CLOUD_URL = "https://chinmaygawad-nutrivision-backend.hf.space";
-        const LOCAL_URL = "http://127.0.0.1:8000";
+        const LOCAL_URL = "http://localhost:8000";
         let API_BASE = CLOUD_URL; // Default to cloud
         let backendMode = "checking"; // "cloud", "local", "checking"
 
@@ -682,7 +682,7 @@
         async function resolveBackend() {
             try {
                 const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
+                const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout to allow Cloud to wake up
                 const res = await fetch(`${CLOUD_URL}/`, { signal: controller.signal });
                 clearTimeout(timeout);
                 if (res.ok) {
@@ -826,7 +826,7 @@
             // Helper: attempt prediction against a specific URL
             async function tryPredict(baseUrl) {
                 const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 30000); // 30s for prediction
+                const timeout = setTimeout(() => controller.abort(), 120000); // 120s for prediction (Cloud CPU is slow)
                 const response = await fetch(`${baseUrl}/predict`, {
                     method: 'POST',
                     body: formData,
