@@ -31,14 +31,8 @@ venv\Scripts\activate   # (On Windows) or `source venv/bin/activate` (On Mac/Lin
 pip install -r requirements.txt
 ```
 
-### 3. Environment Variables (Optional but recommended)
-To get the most accurate nutrition results for complex dishes, set up an account at Edamam (Developer API) and create a `.env` file in the project root:
-```env
-EDAMAM_APP_ID=your_id_here
-EDAMAM_APP_KEY=your_key_here
-```
 
-### 4. Running the App
+### 3. Running the App
 Start the FastAPI server:
 ```bash
 uvicorn backend.main:app --reload
